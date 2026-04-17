@@ -104,10 +104,12 @@ export default function AdminConfigPage() {
 
             <div className="rounded-[28px] border border-stone-200 bg-white p-5">
               <p className="text-sm font-semibold text-stone-900">{t("configSocialTitle")}</p>
+              <p className="mt-2 text-sm text-stone-500">{t("configSocialDescription")}</p>
               <div className="mt-4 grid gap-5 md:grid-cols-3">
                 <label className="space-y-2 text-sm text-stone-600">
                   <span>{t("configFacebookUrl")}</span>
                   <input
+                    placeholder="https://facebook.com/..."
                     value={form.social?.facebook || ""}
                     onChange={(event) => updateSocialField("facebook", event.target.value)}
                     className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
@@ -117,6 +119,7 @@ export default function AdminConfigPage() {
                 <label className="space-y-2 text-sm text-stone-600">
                   <span>{t("configInstagramUrl")}</span>
                   <input
+                    placeholder="https://instagram.com/..."
                     value={form.social?.instagram || ""}
                     onChange={(event) => updateSocialField("instagram", event.target.value)}
                     className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
@@ -126,6 +129,7 @@ export default function AdminConfigPage() {
                 <label className="space-y-2 text-sm text-stone-600">
                   <span>{t("configTiktokUrl")}</span>
                   <input
+                    placeholder="https://tiktok.com/@..."
                     value={form.social?.tiktok || ""}
                     onChange={(event) => updateSocialField("tiktok", event.target.value)}
                     className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
