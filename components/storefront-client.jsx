@@ -897,7 +897,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
               </p>
             </div>
 
-            <div className="w-full rounded-[22px] border border-white/60 bg-[linear-gradient(135deg,rgba(179,138,69,0.1),rgba(255,255,255,0.94))] p-[clamp(10px,1.1vw,14px)] shadow-[0_10px_24px_rgba(43,34,24,0.04)] lg:justify-self-end">
+            <div className="w-full max-w-[360px] justify-self-start rounded-[22px] border border-white/60 bg-[linear-gradient(135deg,rgba(179,138,69,0.1),rgba(255,255,255,0.94))] p-[clamp(10px,1.1vw,14px)] shadow-[0_10px_24px_rgba(43,34,24,0.04)] sm:max-w-none lg:justify-self-end">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.32em] text-stone-400">
                   {t.filterLabel}
@@ -907,7 +907,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                 </div>
               </div>
 
-              <div className="mt-2.5 flex flex-wrap gap-2">
+              <div className="mt-2.5 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
                 {filterTabs.map((tab) => {
                   const active = filter === tab.key;
 
@@ -916,7 +916,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                       key={tab.key}
                       type="button"
                       onClick={() => setFilter(tab.key)}
-                      className={`rounded-full px-[clamp(12px,1vw,14px)] py-[clamp(6px,0.7vw,8px)] text-[clamp(13px,1vw,15px)] font-medium transition ${
+                      className={`min-w-0 rounded-full px-[clamp(10px,1vw,14px)] py-[clamp(6px,0.7vw,8px)] text-center text-[clamp(13px,1vw,15px)] font-medium transition ${
                         active
                           ? "bg-stone-900 text-white"
                           : "bg-white/90 text-stone-600 hover:text-stone-900"
