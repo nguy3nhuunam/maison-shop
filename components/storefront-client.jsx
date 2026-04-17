@@ -800,8 +800,8 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
   return (
     <div className="min-h-screen pb-16 text-stone-900">
       <header className="sticky top-0 z-30 border-b border-[#ddd4ca] bg-[#eae3da]/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
-          <Link href="/" className="group flex items-center gap-3 rounded-2xl px-1 py-1 sm:gap-3.5">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:py-4 lg:px-8">
+          <Link href="/" className="group flex min-w-0 items-center gap-2 rounded-2xl px-1 py-1 sm:gap-3.5">
             <div className="flex shrink-0 items-center justify-center rounded-xl border border-[#e5ded5] bg-white/75 p-1.5 shadow-[0_8px_24px_rgba(120,95,60,0.06)] transition-colors group-hover:border-[#d8c8b6] sm:p-1.5">
               {logoVisible ? (
                 <Image
@@ -821,17 +821,17 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
             </div>
 
             <div className="min-w-0">
-              <p className="truncate text-[10px] uppercase tracking-[0.38em] text-stone-500 sm:text-[11px]">
+              <p className="truncate text-[9px] uppercase tracking-[0.28em] text-stone-500 sm:text-[11px] sm:tracking-[0.38em]">
                 MAISONSHOP.STORE
               </p>
-              <h1 className="mt-1 truncate text-xl font-extrabold tracking-[0.28em] text-stone-900 sm:text-2xl">
+              <h1 className="mt-1 truncate text-[0.9rem] font-extrabold tracking-[0.2em] text-stone-900 sm:text-2xl sm:tracking-[0.28em]">
                 {t.logo}
               </h1>
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center rounded-full border border-stone-200 bg-white/90 p-1 shadow-sm">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="flex items-center rounded-full border border-stone-200 bg-white/90 p-0.5 shadow-sm sm:p-1">
               {languageOptions.map((option) => {
                 const active = language === option.key;
 
@@ -840,13 +840,13 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                     key={option.key}
                     type="button"
                     onClick={() => setLanguage(option.key)}
-                    className={`rounded-full px-3 py-2 text-sm transition ${
+                    className={`rounded-full px-2 py-1.5 text-xs transition sm:px-3 sm:py-2 sm:text-sm ${
                       active
                         ? "bg-stone-900 font-semibold text-white"
                         : "text-stone-700 hover:bg-[#f6efe2] hover:text-[#b38a45]"
                     }`}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5 sm:gap-2">
                       <span>{option.label}</span>
                       <span aria-hidden="true">{option.flag}</span>
                     </span>
