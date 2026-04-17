@@ -33,6 +33,11 @@ export async function PUT(request) {
     const settings = await updateSettings({
       currency: payload.currency === "VND" ? "VND" : "TWD",
       messengerUrl: payload.messengerUrl || "https://m.me/yourpage",
+      social: {
+        facebook: payload.social?.facebook || "",
+        instagram: payload.social?.instagram || "",
+        tiktok: payload.social?.tiktok || "",
+      },
     });
 
     return NextResponse.json({ settings });

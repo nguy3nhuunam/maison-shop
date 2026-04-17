@@ -8,6 +8,11 @@ import { useTranslation } from "@/lib/use-translation";
 const initialState = {
   currency: "TWD",
   messengerUrl: "https://m.me/yourpage",
+  social: {
+    facebook: "",
+    instagram: "",
+    tiktok: "",
+  },
 };
 
 export default function AdminConfigPage() {
@@ -21,7 +26,14 @@ export default function AdminConfigPage() {
     async function loadConfig() {
       try {
         const data = await adminFetch("/api/config");
-        setForm(data.settings);
+        setForm({
+          ...initialState,
+          ...data.settings,
+          social: {
+            ...initialState.social,
+            ...data.settings?.social,
+          },
+        });
       } catch (error) {
         setMessage(error.message || t("configLoadError"));
       } finally {
@@ -48,6 +60,16 @@ export default function AdminConfigPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function updateSocialField(field, value) {
+    setForm((current) => ({
+      ...current,
+      social: {
+        ...(current.social || initialState.social),
+        [field]: value,
+      },
+    }));
   }
 
   return (
@@ -78,6 +100,38 @@ export default function AdminConfigPage() {
                   className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
                 />
               </label>
+            </div>
+
+            <div className="rounded-[28px] border border-stone-200 bg-white p-5">
+              <p className="text-sm font-semibold text-stone-900">{t("configSocialTitle")}</p>
+              <div className="mt-4 grid gap-5 md:grid-cols-3">
+                <label className="space-y-2 text-sm text-stone-600">
+                  <span>{t("configFacebookUrl")}</span>
+                  <input
+                    value={form.social?.facebook || ""}
+                    onChange={(event) => updateSocialField("facebook", event.target.value)}
+                    className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-stone-600">
+                  <span>{t("configInstagramUrl")}</span>
+                  <input
+                    value={form.social?.instagram || ""}
+                    onChange={(event) => updateSocialField("instagram", event.target.value)}
+                    className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-stone-600">
+                  <span>{t("configTiktokUrl")}</span>
+                  <input
+                    value={form.social?.tiktok || ""}
+                    onChange={(event) => updateSocialField("tiktok", event.target.value)}
+                    className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                  />
+                </label>
+              </div>
             </div>
             <div className="rounded-[28px] border border-stone-200 bg-white p-5 text-sm text-stone-500">
               <p className="font-semibold text-stone-900">{t("configInfraTitle")}</p>
