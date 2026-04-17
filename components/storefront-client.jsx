@@ -872,22 +872,24 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
 
       <main className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
         <section className="luxury-card overflow-hidden rounded-[32px] px-4 py-5 sm:px-5 lg:px-7 lg:py-6">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,26vw)] lg:items-start lg:gap-6">
             <div className="max-w-2xl">
               <div className="flex flex-wrap items-center gap-2.5">
-                <p className="text-[11px] uppercase tracking-[0.45em] text-[#b38a45]">{t.brand}</p>
+                <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.38em] text-[#b38a45]">
+                  {t.brand}
+                </p>
                 <span className="hidden h-1 w-1 rounded-full bg-[#d8c3a0] lg:inline-block" />
-                <p className="text-xs text-stone-400">{currency}</p>
+                <p className="text-[clamp(11px,0.8vw,12px)] text-stone-400">{currency}</p>
               </div>
               <h2
-                className={`mt-2.5 max-w-[11ch] text-[2.3rem] font-bold leading-[0.98] tracking-[-0.04em] transition-opacity duration-500 sm:text-[3rem] lg:text-[4.4rem] ${
+                className={`mt-2.5 max-w-[10.5ch] text-[clamp(2.2rem,5vw,4.4rem)] font-bold leading-[0.94] tracking-[-0.045em] transition-opacity duration-500 ${
                   heroReady ? "opacity-100" : "opacity-0"
                 }`}
               >
                 {activeHeroTitle}
               </h2>
               <p
-                className={`mt-2 max-w-lg text-sm leading-6 text-stone-500 transition-opacity duration-500 ${
+                className={`mt-2 max-w-lg text-[clamp(13px,1.2vw,15px)] leading-[1.65] text-stone-500 transition-opacity duration-500 ${
                   heroReady ? "opacity-100" : "opacity-0"
                 }`}
               >
@@ -895,12 +897,12 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
               </p>
             </div>
 
-            <div className="w-full rounded-[22px] border border-white/60 bg-[linear-gradient(135deg,rgba(179,138,69,0.1),rgba(255,255,255,0.94))] p-3 shadow-[0_10px_24px_rgba(43,34,24,0.04)] lg:justify-self-end">
+            <div className="w-full rounded-[22px] border border-white/60 bg-[linear-gradient(135deg,rgba(179,138,69,0.1),rgba(255,255,255,0.94))] p-[clamp(10px,1.1vw,14px)] shadow-[0_10px_24px_rgba(43,34,24,0.04)] lg:justify-self-end">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[11px] uppercase tracking-[0.35em] text-stone-400">
+                <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.32em] text-stone-400">
                   {t.filterLabel}
                 </p>
-                <div className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-stone-500">
+                <div className="rounded-full bg-white/90 px-2.5 py-1 text-[clamp(10px,0.78vw,11px)] font-medium text-stone-500">
                   {cartCount} {t.cartCount}
                 </div>
               </div>
@@ -914,7 +916,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                       key={tab.key}
                       type="button"
                       onClick={() => setFilter(tab.key)}
-                      className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                      className={`rounded-full px-[clamp(12px,1vw,14px)] py-[clamp(6px,0.7vw,8px)] text-[clamp(13px,1vw,15px)] font-medium transition ${
                         active
                           ? "bg-stone-900 text-white"
                           : "bg-white/90 text-stone-600 hover:text-stone-900"
@@ -926,16 +928,22 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                 })}
               </div>
 
-              <div className="mt-2.5 grid grid-cols-2 gap-2 text-sm text-stone-500">
+              <div className="mt-2.5 grid grid-cols-2 gap-2 text-[clamp(13px,0.95vw,14px)] text-stone-500">
                 <div className="rounded-[18px] border border-white/70 bg-white/90 px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">
+                  <p className="text-[clamp(9px,0.68vw,10px)] uppercase tracking-[0.24em] text-stone-400">
                     {t.currencyLabel}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-stone-900">{currency}</p>
+                  <p className="mt-1 text-[clamp(13px,1vw,15px)] font-semibold text-stone-900">
+                    {currency}
+                  </p>
                 </div>
                 <div className="rounded-[18px] border border-white/70 bg-white/90 px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-stone-400">{t.cart}</p>
-                  <p className="mt-1 text-sm font-semibold text-stone-900">{cartCount}</p>
+                  <p className="text-[clamp(9px,0.68vw,10px)] uppercase tracking-[0.24em] text-stone-400">
+                    {t.cart}
+                  </p>
+                  <p className="mt-1 text-[clamp(13px,1vw,15px)] font-semibold text-stone-900">
+                    {cartCount}
+                  </p>
                 </div>
               </div>
             </div>
