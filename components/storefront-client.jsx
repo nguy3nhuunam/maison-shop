@@ -873,7 +873,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
       <main className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
         <section className="luxury-card overflow-hidden rounded-[32px] px-4 py-5 sm:px-5 lg:px-7 lg:py-6">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,26vw)] lg:items-start lg:gap-6">
-            <div className="max-w-2xl">
+            <div className="max-w-none sm:max-w-2xl">
               <div className="flex flex-wrap items-center gap-2.5">
                 <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.38em] text-[#b38a45]">
                   {t.brand}
@@ -882,14 +882,14 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                 <p className="text-[clamp(11px,0.8vw,12px)] text-stone-400">{currency}</p>
               </div>
               <h2
-                className={`mt-2.5 max-w-[10.5ch] text-[clamp(2.2rem,5vw,4.4rem)] font-bold leading-[0.94] tracking-[-0.045em] transition-opacity duration-500 ${
+                className={`mt-2.5 max-w-[13.5ch] text-[clamp(2.2rem,5vw,4.4rem)] font-bold leading-[0.94] tracking-[-0.045em] transition-opacity duration-500 sm:max-w-[12ch] lg:max-w-[10.5ch] ${
                   heroReady ? "opacity-100" : "opacity-0"
                 }`}
               >
                 {activeHeroTitle}
               </h2>
               <p
-                className={`mt-2 max-w-lg text-[clamp(13px,1.2vw,15px)] leading-[1.65] text-stone-500 transition-opacity duration-500 ${
+                className={`mt-2 max-w-[32ch] text-[clamp(13px,1.2vw,15px)] leading-[1.65] text-stone-500 transition-opacity duration-500 sm:max-w-lg ${
                   heroReady ? "opacity-100" : "opacity-0"
                 }`}
               >
