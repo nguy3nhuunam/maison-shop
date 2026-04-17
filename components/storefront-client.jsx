@@ -21,6 +21,13 @@ const HERO_SLOGAN_KEY = "maison-hero-slogan";
 const HERO_SUBTEXT_KEY = "maison-hero-subtext";
 const VOUCHER_KEY = "maison-voucher";
 const BRAND_LOGO_SRC = "/brand/maison-logo.png";
+const EMPTY_CUSTOMER_FORM = {
+  name: "",
+  phone: "",
+  addressText: "",
+  addressImage: "",
+  addressImageName: "",
+};
 const HERO_TITLE_KEYS = Array.from({ length: 15 }, (_, index) => `heroTitle${index + 1}`);
 const HERO_SUBTEXT_KEYS = Array.from({ length: 10 }, (_, index) => `heroSubtext${index + 1}`);
 const HERO_SLOGANS = [
@@ -203,6 +210,43 @@ function CartIcon() {
   );
 }
 
+function FacebookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+      <path d="M13.5 21v-7.2h2.4l.4-2.8h-2.8V9.2c0-.8.2-1.4 1.4-1.4H16V5.3c-.3 0-.9-.1-1.8-.1-1.8 0-3.1 1.1-3.1 3.2V11H8.8v2.8h2.3V21h2.4Z" />
+    </svg>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" aria-hidden="true">
+      <rect x="3.75" y="3.75" width="16.5" height="16.5" rx="4.5" strokeWidth="1.7" />
+      <circle cx="12" cy="12" r="3.75" strokeWidth="1.7" />
+      <circle cx="17.1" cy="6.9" r="1.05" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function TikTokIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+      <path d="M14.8 3c.4 1.5 1.3 2.7 2.6 3.4.8.4 1.6.6 2.4.6v2.6c-1.1 0-2.2-.2-3.2-.7v5.1c0 3-2.4 5.4-5.4 5.4S5.8 17 5.8 14s2.4-5.4 5.4-5.4c.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.5 0-2.8 1.3-2.8 2.8s1.3 2.8 2.8 2.8S14 15.5 14 14V3h.8Z" />
+    </svg>
+  );
+}
+
+function normalizeExternalUrl(value) {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) {
+    return "";
+  }
+
+  return rawValue.startsWith("http://") || rawValue.startsWith("https://")
+    ? rawValue
+    : `https://${rawValue}`;
+}
+
 export default function StorefrontClient({ products, settings, fomoItems }) {
   const [catalog, setCatalog] = useState(products);
   const [language, setLanguage] = useState("vi");
@@ -219,17 +263,12 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
   const [bannerMessage, setBannerMessage] = useState("");
   const [quickBuyMessage, setQuickBuyMessage] = useState("");
   const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [orderSuccessOpen, setOrderSuccessOpen] = useState(false);
   const [voucherInput, setVoucherInput] = useState("");
   const [voucher, setVoucher] = useState(null);
   const [voucherMessage, setVoucherMessage] = useState("");
   const [applyingVoucher, setApplyingVoucher] = useState(false);
-  const [customerForm, setCustomerForm] = useState({
-    name: "",
-    phone: "",
-    addressText: "",
-    addressImage: "",
-    addressImageName: "",
-  });
+  const [customerForm, setCustomerForm] = useState(EMPTY_CUSTOMER_FORM);
   const [viewedIds, setViewedIds] = useState([]);
 
   useEffect(() => {
@@ -386,9 +425,69 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
   const total = pricing.total;
   const filteredProducts =
     filter === "all" ? catalog : catalog.filter((product) => product.category === filter);
+  const footerContent =
+    language === "zh"
+      ? {
+          brandTitle: "MAISON",
+          brandDescription:
+            "Tinh giản trong thiết kế, tinh tế trong trải nghiệm – dành cho phong cách sống hiện đại.",
+          brandDescriptionEn: "Refined minimalism, crafted for modern living.",
+          productTitle: "商品",
+          productItems: ["男裝", "女裝", "上衣", "褲裝", "洋裝", "內著", "Sale"],
+          supportTitle: "支援",
+          supportItems: ["購物指南", "退換貨", "配送資訊", "FAQ"],
+          contactTitle: "聯絡我們",
+          contactDescription: "透過社群平台與 MAISON 保持聯繫",
+          copyright: "© 2026 MAISON SHOP",
+          designedBy: "Designed by MrNine",
+        }
+      : {
+          brandTitle: "MAISON",
+          brandDescription:
+            "Tinh giản trong thiết kế, tinh tế trong trải nghiệm – dành cho phong cách sống hiện đại.",
+          brandDescriptionEn: "Refined minimalism, crafted for modern living.",
+          productTitle: "Sản phẩm",
+          productItems: ["Nam", "Nữ", "Áo", "Quần", "Váy", "Đồ lót", "Sale"],
+          supportTitle: "Hỗ trợ",
+          supportItems: ["Mua hàng", "Đổi trả", "Vận chuyển", "FAQ"],
+          contactTitle: "Liên hệ",
+          contactDescription: "Kết nối với MAISON qua mạng xã hội",
+          copyright: "© 2026 MAISON SHOP",
+          designedBy: "Designed by MrNine",
+        };
+  const socialLinks = [
+    {
+      key: "facebook",
+      label: "Facebook",
+      href: normalizeExternalUrl(settings?.social?.facebook),
+      icon: <FacebookIcon />,
+    },
+    {
+      key: "instagram",
+      label: "Instagram",
+      href: normalizeExternalUrl(settings?.social?.instagram),
+      icon: <InstagramIcon />,
+    },
+    {
+      key: "tiktok",
+      label: "TikTok",
+      href: normalizeExternalUrl(settings?.social?.tiktok),
+      icon: <TikTokIcon />,
+    },
+  ].filter((item) => item.href);
 
   function updateCustomerField(field, value) {
     setCustomerForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function resetCustomerForm() {
+    setCustomerForm({ ...EMPTY_CUSTOMER_FORM });
+  }
+
+  function closeOrderSuccessModal() {
+    setOrderSuccessOpen(false);
+    setQuickBuyMessage("");
+    setCheckoutMessage("");
   }
 
   function getCustomerNameError() {
@@ -609,10 +708,12 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
     try {
       await submitItems([item]);
       applyPurchasedItems([item]);
+      resetCustomerForm();
       setVoucher(null);
       setVoucherInput("");
       setVoucherMessage("");
       setBannerMessage(t.quickBuySuccess);
+      setOrderSuccessOpen(true);
       return true;
     } catch (error) {
       setQuickBuyMessage(error.message || t.orderError);
@@ -650,6 +751,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
       const purchasedItems = [...cart];
       applyPurchasedItems(purchasedItems);
       setCart([]);
+      resetCustomerForm();
       setVoucher(null);
       setVoucherInput("");
       setVoucherMessage("");
@@ -657,6 +759,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
       setCartOpen(false);
       setSelectedProductId(null);
       setBannerMessage(t.orderSuccess);
+      setOrderSuccessOpen(true);
     } catch (error) {
       setCheckoutMessage(error.message || t.orderError);
     } finally {
@@ -664,18 +767,22 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
     }
   }
 
-  function buildMessengerHref(product, variant) {
-    const baseUrl = settings.messengerUrl || "https://m.me/yourpage";
-    const selectedVariant = variant || product?.variants?.find((item) => item.stock > 0) || null;
+  function buildMessengerHref(product) {
+    const fallbackUrl = "https://m.me/yourpage";
+    const configuredUrl = String(settings.messengerUrl || fallbackUrl).trim() || fallbackUrl;
     const message = product
-      ? `I want to buy ${product.name}${selectedVariant ? `, size ${selectedVariant.size}, color ${selectedVariant.color}` : ""}.`
-      : "I need support from MAISON SHOP.";
+      ? `Mình muốn tư vấn thêm về mẫu ${product.name}`
+      : "Mình muốn tư vấn thêm về sản phẩm của MAISON SHOP";
 
     try {
-      const url = new URL(baseUrl);
-      url.searchParams.set("text", message);
-      return url.toString();
+      const resolvedUrl = configuredUrl.startsWith("http")
+        ? configuredUrl
+        : `https://${configuredUrl}`;
+      const url = new URL(resolvedUrl);
+      const baseUrl = `${url.protocol}//${url.host}${url.pathname}`.replace(/\/$/, "");
+      return `${baseUrl}?text=${encodeURIComponent(message)}`;
     } catch {
+      const baseUrl = configuredUrl.replace(/\?.*$/, "").replace(/\/$/, "");
       return `${baseUrl}?text=${encodeURIComponent(message)}`;
     }
   }
@@ -986,6 +1093,82 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
             </div>
           </section>
         ) : null}
+
+        <footer className="mt-16 border-t border-[#e9e0d5]">
+          <div className="mx-auto max-w-[1200px] px-6 py-12">
+            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-4 lg:gap-12">
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold tracking-[0.18em] text-stone-900">
+                  {footerContent.brandTitle}
+                </h3>
+                <div className="space-y-3 text-sm leading-7 text-stone-500/80">
+                  <p>{footerContent.brandDescription}</p>
+                  <p>{footerContent.brandDescriptionEn}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold tracking-[0.18em] text-stone-900">
+                  {footerContent.productTitle}
+                </h4>
+                <p className="text-sm leading-8 text-stone-500/80">
+                  {footerContent.productItems.map((item, index) => (
+                    <span key={item}>
+                      {item}
+                      {index < footerContent.productItems.length - 1 ? (
+                        <span className="px-2 text-stone-300">·</span>
+                      ) : null}
+                    </span>
+                  ))}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold tracking-[0.18em] text-stone-900">
+                  {footerContent.supportTitle}
+                </h4>
+                <ul className="space-y-3 text-sm text-stone-500/80">
+                  {footerContent.supportItems.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold tracking-[0.18em] text-stone-900">
+                  {footerContent.contactTitle}
+                </h4>
+                <p className="text-sm leading-7 text-stone-500/80">{footerContent.contactDescription}</p>
+                {socialLinks.length > 0 ? (
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    {socialLinks.map((item) => (
+                      <a
+                        key={item.key}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={item.label}
+                        className="group inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-stone-500/70 transition duration-200 hover:scale-105 hover:text-stone-900"
+                      >
+                        <span className="transition-opacity duration-200 group-hover:opacity-100">
+                          {item.icon}
+                        </span>
+                        <span className="sr-only">{item.label}</span>
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-10 pt-2">
+              <p className="text-xs tracking-[0.18em] text-stone-400/90">
+                {footerContent.copyright}
+              </p>
+              <p className="mt-2 text-xs text-stone-500/70">{footerContent.designedBy}</p>
+            </div>
+          </div>
+        </footer>
       </main>
 
       <a
@@ -1302,6 +1485,39 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                   <p className="mt-3 text-sm text-stone-400">{t.thankYou}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {orderSuccessOpen ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-900/45 px-4">
+          <div className="luxury-card w-full max-w-md rounded-[28px] p-6 text-center sm:p-8">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f6efe2] text-2xl">
+              {"\uD83C\uDF89"}
+            </div>
+            <h3 className="mt-5 text-2xl font-bold text-stone-900">
+              {t("orderSuccessModalTitle")}
+            </h3>
+            <p className="mt-3 text-sm leading-7 text-stone-500">
+              {t("orderSuccessModalDescription")}
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={closeOrderSuccessModal}
+                className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-300"
+              >
+                {t.close}
+              </button>
+              <button
+                type="button"
+                onClick={closeOrderSuccessModal}
+                className="rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#b38a45]"
+              >
+                {t("continueShopping")}
+              </button>
             </div>
           </div>
         </div>
