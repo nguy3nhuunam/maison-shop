@@ -1094,9 +1094,9 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
           </section>
         ) : null}
 
-        <footer className="mt-16 border-t border-[#e9e0d5]">
-          <div className="mx-auto max-w-[1200px] px-6 py-12">
-            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-4 lg:gap-12">
+        <footer className="mt-10 pb-6">
+          <div className="luxury-card mx-auto max-w-[1200px] rounded-[32px] px-6 py-8 sm:px-8 sm:py-10">
+            <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
               <div className="space-y-4">
                 <h3 className="text-xl font-bold tracking-[0.18em] text-stone-900">
                   {footerContent.brandTitle}
@@ -1159,7 +1159,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                       <span
                         key={item.key}
                         aria-hidden="true"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/60 text-stone-300"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f6efe2] text-stone-300"
                       >
                         {item.icon}
                       </span>
@@ -1169,7 +1169,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
               </div>
             </div>
 
-            <div className="mt-10 pt-2">
+            <div className="mt-8 border-t border-stone-200/80 pt-5">
               <p className="text-xs tracking-[0.18em] text-stone-400/90">
                 {footerContent.copyright}
               </p>
