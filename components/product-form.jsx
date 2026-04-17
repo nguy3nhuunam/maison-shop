@@ -7,8 +7,11 @@ import { useTranslation } from "@/lib/use-translation";
 
 const presetSizes = ["S", "M", "L", "XL"];
 
+let nextVariantKey = 0;
+
 function createEmptyVariant() {
   return {
+    clientKey: `variant-${nextVariantKey++}`,
     size: "",
     color: "",
     stock: 0,
@@ -55,6 +58,7 @@ export default function ProductForm({ product }) {
           primaryImage: product.images?.[0] || product.image || "",
           variants:
             product.variants?.map((variant) => ({
+              clientKey: `variant-${nextVariantKey++}`,
               size: variant.size,
               color: variant.color,
               stock: Number(variant.stock || 0),
@@ -375,7 +379,7 @@ export default function ProductForm({ product }) {
 
           {form.variants.map((variant, index) => (
             <div
-              key={`${index}-${variant.size}-${variant.color}`}
+              key={variant.clientKey}
               className="grid gap-3 rounded-3xl border border-stone-200 bg-[#fcfaf6] p-4 md:grid-cols-[1fr_1fr_120px_80px]"
             >
               <label className="space-y-2 text-sm text-stone-600">
