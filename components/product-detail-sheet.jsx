@@ -1,0 +1,612 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import AddressImageInput from "@/components/address-image-input";
+import { formatCurrency } from "@/lib/currency";
+import {
+  getComboTiers,
+  getDiscountedUnitPrice,
+  getProductSavings,
+} from "@/lib/pricing";
+
+function fillTemplate(template, params = {}) {
+  return Object.entries(params).reduce(
+    (result, [key, value]) =>
+      result
+        .replaceAll(`{{${key}}}`, String(value))
+        .replaceAll(`{${key}}`, String(value)),
+    template,
+  );
+}
+
+function getFirstAvailableVariant(product) {
+  return product.variants.find((variant) => variant.stock > 0) || product.variants[0] || null;
+}
+
+function getVariantBySelection(product, size, color) {
+  return (
+    product.variants.find(
+      (variant) => variant.size === size && variant.color === color,
+    ) || null
+  );
+}
+
+function getSelectableSizes(product, selectedColor) {
+  return [...new Set(product.variants.map((variant) => variant.size))].map((size) => ({
+    value: size,
+    disabled: !product.variants.some(
+      (variant) =>
+        variant.size === size &&
+        variant.stock > 0 &&
+        (!selectedColor || variant.color === selectedColor),
+    ),
+  }));
+}
+
+function getSelectableColors(product, selectedSize) {
+  return [...new Set(product.variants.map((variant) => variant.color))].map((color) => ({
+    value: color,
+    disabled: !product.variants.some(
+      (variant) =>
+        variant.color === color &&
+        variant.stock > 0 &&
+        (!selectedSize || variant.size === selectedSize),
+    ),
+  }));
+}
+
+function resolveFomoContent(item, stock) {
+  const randomCount = Math.floor(Math.random() * 46) + 5;
+  const stockValue = stock > 0 ? stock : Math.floor(Math.random() * 8) + 3;
+
+  return item.content
+    .replaceAll("{{count}}", String(randomCount))
+    .replaceAll("{{stock}}", String(stockValue));
+}
+
+export default function ProductDetailSheet({
+  product,
+  products,
+  fomoItems,
+  open,
+  language,
+  currency,
+  t,
+  customerForm,
+  onCustomerChange,
+  onAddressImageChange,
+  onAddressImageRemove,
+  onClose,
+  onAddToCart,
+  onQuickBuy,
+  onOpenRelatedProduct,
+  buildMessengerHref,
+  quickBuyMessage,
+  quickBuySubmitting,
+}) {
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [localMessage, setLocalMessage] = useState("");
+  const [fomoIndex, setFomoIndex] = useState(0);
+
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    const firstVariant = getFirstAvailableVariant(product);
+    setSelectedSize(firstVariant?.size || "");
+    setSelectedColor(firstVariant?.color || "");
+    setQuantity(firstVariant?.stock > 0 ? 1 : 0);
+    setLocalMessage("");
+    setFomoIndex(0);
+  }, [product]);
+
+  const selectedVariant = useMemo(
+    () => (product ? getVariantBySelection(product, selectedSize, selectedColor) : null),
+    [product, selectedColor, selectedSize],
+  );
+  const sizeOptions = useMemo(
+    () => (product ? getSelectableSizes(product, selectedColor) : []),
+    [product, selectedColor],
+  );
+  const colorOptions = useMemo(
+    () => (product ? getSelectableColors(product, selectedSize) : []),
+    [product, selectedSize],
+  );
+  const comboTiers = useMemo(
+    () => (product ? getComboTiers(product.basePrice, product.discountPercent) : []),
+    [product],
+  );
+  const relatedProducts = useMemo(
+    () =>
+      product
+        ? products
+            .filter((item) => item.id !== product.id && item.category === product.category)
+            .slice(0, 4)
+        : [],
+    [product, products],
+  );
+  const resolvedFomo = useMemo(() => {
+    if (!fomoItems.length) {
+      return [];
+    }
+
+    return fomoItems.map((item) => ({
+      ...item,
+      content: resolveFomoContent(item, selectedVariant?.stock || product?.totalStock || 0),
+    }));
+  }, [fomoItems, product?.totalStock, selectedVariant?.stock]);
+
+  useEffect(() => {
+    if (resolvedFomo.length <= 1 || !open) {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      setFomoIndex((current) => (current + 1) % resolvedFomo.length);
+    }, 3200);
+
+    return () => window.clearInterval(interval);
+  }, [open, resolvedFomo.length]);
+
+  if (!product) {
+    return null;
+  }
+
+  function handleSizeChange(size) {
+    const matchingVariant =
+      product.variants.find(
+        (variant) =>
+          variant.size === size &&
+          variant.stock > 0 &&
+          (!selectedColor || variant.color === selectedColor),
+      ) ||
+      product.variants.find((variant) => variant.size === size && variant.stock > 0);
+
+    setSelectedSize(size);
+    setSelectedColor(matchingVariant?.color || "");
+    setQuantity(matchingVariant?.stock > 0 ? 1 : 0);
+    setLocalMessage("");
+  }
+
+  function handleColorChange(color) {
+    const matchingVariant =
+      product.variants.find(
+        (variant) =>
+          variant.color === color &&
+          variant.stock > 0 &&
+          (!selectedSize || variant.size === selectedSize),
+      ) ||
+      product.variants.find((variant) => variant.color === color && variant.stock > 0);
+
+    setSelectedColor(color);
+    setSelectedSize(matchingVariant?.size || "");
+    setQuantity(matchingVariant?.stock > 0 ? 1 : 0);
+    setLocalMessage("");
+  }
+
+  function buildItem() {
+    if (!selectedVariant || !selectedSize || !selectedColor) {
+      setLocalMessage(t.variantRequired);
+      return null;
+    }
+
+    if (selectedVariant.stock <= 0) {
+      setLocalMessage(t.outOfStock);
+      return null;
+    }
+
+    return {
+      key: `${product.id}-${selectedVariant.id}`,
+      productId: product.id,
+      variantId: selectedVariant.id,
+      name: product.name,
+      image: product.image,
+      size: selectedVariant.size,
+      color: selectedVariant.color,
+      quantity,
+      price: product.basePrice,
+      discountPercent: product.discountPercent,
+      isFreeShip: product.isFreeShip,
+      stock: selectedVariant.stock,
+    };
+  }
+
+  const messengerHref = buildMessengerHref(product, selectedVariant);
+  const discountedPrice = getDiscountedUnitPrice(product.basePrice, product.discountPercent);
+  const unitSavings = getProductSavings(product.basePrice, product.discountPercent);
+
+  return (
+    <>
+      <div
+        className={`fixed inset-0 z-[60] bg-stone-900/45 transition ${open ? "visible opacity-100" : "invisible opacity-0"}`}
+        onClick={onClose}
+      />
+
+      <div
+        className={`fixed inset-0 z-[70] overflow-y-auto bg-[#fffdf9] transition duration-300 ${open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-8 opacity-0"}`}
+      >
+        <div className="mx-auto min-h-full max-w-7xl px-4 py-5 lg:px-8 lg:py-8">
+          <div className="luxury-card fade-rise rounded-[36px] p-5 lg:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[#b38a45]">
+                  {t.quickBuyTitle}
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-stone-900 lg:text-4xl">
+                  {product.name}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-stone-500">
+                  {t.quickBuyNote}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-stone-200 px-4 py-2 text-sm text-stone-600"
+              >
+                {t.close}
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
+              <div className="space-y-5">
+                <div className="overflow-hidden rounded-[28px] bg-[#f2eadf]">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="aspect-[4/5] w-full object-cover"
+                  />
+                </div>
+
+                <div className="rounded-[28px] bg-white p-5">
+                  <div className="border-b border-stone-100 pb-5">
+                    <p className="text-sm font-semibold text-stone-900">{t("productFieldDescription")}</p>
+                    <p className="mt-3 text-sm leading-7 text-stone-500">
+                      {product.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-stone-500">{t("fromLabel")}</p>
+                      {product.discountPercent > 0 ? (
+                        <p className="mt-1 text-sm text-stone-400 line-through">
+                          {formatCurrency(product.basePrice, currency, language)}
+                        </p>
+                      ) : null}
+                      <p className="mt-1 text-3xl font-bold text-stone-900">
+                        {formatCurrency(discountedPrice, currency, language)}
+                      </p>
+                    </div>
+                    <div className="text-right text-sm text-stone-500">
+                      <p>{fillTemplate(t.variantCountLabel, { count: product.variants.length })}</p>
+                      <p className="mt-1">
+                        {selectedVariant?.stock > 0
+                          ? fillTemplate(t.stockLeft, { count: selectedVariant.stock })
+                          : t.outOfStock}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {product.discountPercent > 0 ? (
+                      <span className="rounded-full bg-stone-900 px-3 py-1 text-[11px] font-semibold text-white">
+                        {t("discountBadge", { percent: product.discountPercent })}
+                      </span>
+                    ) : null}
+                    {product.isFreeShip ? (
+                      <span className="rounded-full bg-[#f6efe2] px-3 py-1 text-[11px] font-semibold text-[#b38a45]">
+                        {t("freeShipBadge")}
+                      </span>
+                    ) : null}
+                    {unitSavings > 0 ? (
+                      <span className="rounded-full border border-stone-200 px-3 py-1 text-[11px] text-stone-600">
+                        {t("promotionSavings", {
+                          amount: formatCurrency(unitSavings, currency, language),
+                        })}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {resolvedFomo.length > 0 ? (
+                    <div className="soft-pulse mt-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-600">
+                      <p className="font-semibold">{t.fomoTitle}</p>
+                      <p className="mt-1">{resolvedFomo[fomoIndex]?.content}</p>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-5">
+                    <p className="text-sm font-semibold text-stone-900">{t.comboTitle}</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      {comboTiers.map((tier) => (
+                        <button
+                          key={tier.quantity}
+                          type="button"
+                          onClick={() => setQuantity(Math.min(tier.quantity, selectedVariant?.stock || tier.quantity))}
+                          className={`rounded-2xl border px-4 py-4 text-left transition ${
+                            quantity === tier.quantity
+                              ? "border-stone-900 bg-stone-900 text-white"
+                              : tier.quantity === 3
+                                ? "border-[#b38a45] bg-[#fff8ee] text-stone-800"
+                                : "border-stone-200 bg-white text-stone-700"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold">{tier.quantity}x</span>
+                            {tier.quantity === 3 ? (
+                              <span className="rounded-full bg-[#b38a45] px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white">
+                                {t.comboBest}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-3 text-lg font-bold">
+                            {formatCurrency(tier.total, currency, language)}
+                          </p>
+                          {tier.savings > 0 ? (
+                            <p className="mt-1 text-xs opacity-80">
+                              {fillTemplate(t.comboSave, {
+                                amount: formatCurrency(tier.savings, currency, language),
+                              })}
+                            </p>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {product.reviews?.length ? (
+                    <div className="mt-5 rounded-[24px] bg-[#fcfaf6] p-4">
+                      <p className="text-sm font-semibold text-stone-900">{t.reviewsTitle}</p>
+                      <div className="mt-3 space-y-3">
+                        {product.reviews.slice(0, 3).map((review) => (
+                          <div key={review.id} className="rounded-2xl bg-white p-3">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium text-stone-800">{review.name}</span>
+                              <span className="text-[#b38a45]">
+                                {"★".repeat(review.rating || 5)}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm text-stone-500">{review.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div className="rounded-[28px] bg-white p-5">
+                  <p className="text-sm font-semibold text-stone-900">{t.selectOptions}</p>
+
+                  <div className="mt-5">
+                    <p className="text-sm font-semibold text-stone-900">{t.selectSize}</p>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {sizeOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          disabled={option.disabled}
+                          onClick={() => handleSizeChange(option.value)}
+                          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                            selectedSize === option.value
+                              ? "bg-stone-900 text-white"
+                              : option.disabled
+                                ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-300"
+                                : "border border-stone-200 bg-white text-stone-700 hover:border-stone-900"
+                          }`}
+                        >
+                          {option.value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-5">
+                    <p className="text-sm font-semibold text-stone-900">{t.selectColor}</p>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {colorOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          disabled={option.disabled}
+                          onClick={() => handleColorChange(option.value)}
+                          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                            selectedColor === option.value
+                              ? "bg-stone-900 text-white"
+                              : option.disabled
+                                ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-300"
+                                : "border border-stone-200 bg-white text-stone-700 hover:border-stone-900"
+                          }`}
+                        >
+                          {option.value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-end gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-stone-900">{t.quantity}</p>
+                      <div className="mt-3 flex items-center gap-2 rounded-full border border-stone-200 bg-white px-2 py-1">
+                        <button
+                          type="button"
+                          disabled={!selectedVariant || quantity <= 1}
+                          onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                          className="h-9 w-9 rounded-full text-lg text-stone-700 disabled:cursor-not-allowed disabled:text-stone-300"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-8 text-center text-sm font-semibold">{quantity}</span>
+                        <button
+                          type="button"
+                          disabled={!selectedVariant || quantity >= (selectedVariant?.stock || 0)}
+                          onClick={() =>
+                            setQuantity((current) =>
+                              Math.min(selectedVariant?.stock || current, current + 1),
+                            )
+                          }
+                          className="h-9 w-9 rounded-full text-lg text-stone-700 disabled:cursor-not-allowed disabled:text-stone-300"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {selectedVariant ? (
+                      <div className="rounded-2xl bg-[#f6efe2] px-4 py-3 text-sm text-stone-700">
+                        {fillTemplate(t.variantInfo, {
+                          size: selectedVariant.size,
+                          color: selectedVariant.color,
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <form
+                  className="rounded-[28px] bg-white p-5"
+                  onSubmit={async (event) => {
+                    event.preventDefault();
+                    const item = buildItem();
+                    if (!item) {
+                      return;
+                    }
+                    const ok = await onQuickBuy(item);
+                    if (ok) {
+                      onClose();
+                    }
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-stone-900">{t.customerInfo}</p>
+                      <p className="mt-1 text-sm text-stone-500">{t.restoreInfo}</p>
+                    </div>
+                    <a
+                      href={messengerHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full border border-[#b38a45] px-4 py-2 text-sm font-medium text-[#b38a45]"
+                    >
+                      {t.chatForThis}
+                    </a>
+                  </div>
+
+                  <div className="mt-5 grid gap-4">
+                    <label className="block space-y-2 text-sm text-stone-600">
+                      <span>{t("customer_name")}</span>
+                      <input
+                        name="name"
+                        required
+                        minLength={2}
+                        placeholder={t("customer_name_placeholder")}
+                        value={customerForm.name}
+                        onChange={(event) => onCustomerChange("name", event.target.value)}
+                        className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                      />
+                    </label>
+                    <label className="block space-y-2 text-sm text-stone-600">
+                      <span>{t.phone}</span>
+                      <input
+                        required
+                        value={customerForm.phone}
+                        onChange={(event) => onCustomerChange("phone", event.target.value)}
+                        className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                      />
+                    </label>
+                    <label className="block space-y-2 text-sm text-stone-600">
+                      <span>{t.address}</span>
+                      <textarea
+                        rows={4}
+                        value={customerForm.addressText}
+                        onChange={(event) => onCustomerChange("addressText", event.target.value)}
+                        className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                      />
+                    </label>
+                    <AddressImageInput
+                      label={t.addressImageLabel}
+                      uploadTitle={t.addressImageUploadTitle}
+                      uploadHelper={t.addressImageUploadHelper}
+                      uploadedStatus={t.addressImageUploaded}
+                      replaceLabel={t.addressImageReplace}
+                      removeLabel={t.addressImageRemove}
+                      previewUrl={customerForm.addressImage}
+                      fileName={customerForm.addressImageName}
+                      onFileChange={onAddressImageChange}
+                      onRemove={onAddressImageRemove}
+                    />
+                  </div>
+
+                  {localMessage || quickBuyMessage ? (
+                    <p className="mt-4 text-sm text-red-500">{localMessage || quickBuyMessage}</p>
+                  ) : null}
+
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const item = buildItem();
+                        if (!item) {
+                          return;
+                        }
+                        onAddToCart(item);
+                        onClose();
+                      }}
+                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition hover:border-[#b38a45] hover:text-[#b38a45]"
+                    >
+                      {t.addToCart}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={quickBuySubmitting}
+                      className="rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#b38a45] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {quickBuySubmitting ? t("submitting") : t("submitOrder")}
+                    </button>
+                  </div>
+                </form>
+
+                {relatedProducts.length > 0 ? (
+                  <div className="rounded-[28px] bg-white p-5">
+                    <p className="text-sm font-semibold text-stone-900">{t.relatedProducts}</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {relatedProducts.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => onOpenRelatedProduct(item.id)}
+                          className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-[#fcfaf6] p-3 text-left"
+                        >
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="h-20 w-16 rounded-2xl object-cover"
+                          />
+                          <div>
+                            <p className="font-medium text-stone-900">{item.name}</p>
+                            <p className="mt-1 text-sm text-stone-500">
+                              {formatCurrency(
+                                getDiscountedUnitPrice(item.basePrice, item.discountPercent),
+                                currency,
+                                language,
+                              )}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
