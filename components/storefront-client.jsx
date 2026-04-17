@@ -212,7 +212,7 @@ function CartIcon() {
 
 function FacebookIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-[18px] w-[18px]" aria-hidden="true">
       <path d="M13.5 21v-7.2h2.4l.4-2.8h-2.8V9.2c0-.8.2-1.4 1.4-1.4H16V5.3c-.3 0-.9-.1-1.8-.1-1.8 0-3.1 1.1-3.1 3.2V11H8.8v2.8h2.3V21h2.4Z" />
     </svg>
   );
@@ -220,7 +220,7 @@ function FacebookIcon() {
 
 function InstagramIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px] stroke-current" aria-hidden="true">
       <rect x="3.75" y="3.75" width="16.5" height="16.5" rx="4.5" strokeWidth="1.7" />
       <circle cx="12" cy="12" r="3.75" strokeWidth="1.7" />
       <circle cx="17.1" cy="6.9" r="1.05" fill="currentColor" stroke="none" />
@@ -230,8 +230,8 @@ function InstagramIcon() {
 
 function TikTokIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-      <path d="M14.8 3c.4 1.5 1.3 2.7 2.6 3.4.8.4 1.6.6 2.4.6v2.6c-1.1 0-2.2-.2-3.2-.7v5.1c0 3-2.4 5.4-5.4 5.4S5.8 17 5.8 14s2.4-5.4 5.4-5.4c.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.5 0-2.8 1.3-2.8 2.8s1.3 2.8 2.8 2.8S14 15.5 14 14V3h.8Z" />
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-[18px] w-[18px]" aria-hidden="true">
+      <path d="M9 3v12.5a3.5 3.5 0 1 1-3.5-3.5c.2 0 .4 0 .5.1V9.5a6.5 6.5 0 1 0 6.5 6.5V7.9c1.3 1 2.8 1.6 4.5 1.6V6.5c-1.2 0-2.3-.4-3.2-1.2A4.5 4.5 0 0 1 12 3H9z" />
     </svg>
   );
 }
@@ -401,7 +401,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
   }, [voucher]);
 
   const t = getTranslation(language);
-  const currency = settings.currency || "TWD";
+  const currency = settings?.currency || "TWD";
   const activeHeroTitle =
     t(heroSlogan || HERO_TITLE_KEYS[0]) || HERO_TITLES.vi[0] || HERO_SLOGANS[0];
   const activeHeroSubtext =
@@ -455,26 +455,9 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
           copyright: "© 2026 MAISON SHOP",
           designedBy: "Designed by MrNine",
         };
-  const socialLinks = [
-    {
-      key: "facebook",
-      label: "Facebook",
-      href: normalizeExternalUrl(settings?.social?.facebook),
-      icon: <FacebookIcon />,
-    },
-    {
-      key: "instagram",
-      label: "Instagram",
-      href: normalizeExternalUrl(settings?.social?.instagram),
-      icon: <InstagramIcon />,
-    },
-    {
-      key: "tiktok",
-      label: "TikTok",
-      href: normalizeExternalUrl(settings?.social?.tiktok),
-      icon: <TikTokIcon />,
-    },
-  ].filter((item) => item.href);
+  const facebookLink = normalizeExternalUrl(settings?.social?.facebook);
+  const instagramLink = normalizeExternalUrl(settings?.social?.instagram);
+  const tiktokLink = normalizeExternalUrl(settings?.social?.tiktok);
 
   function updateCustomerField(field, value) {
     setCustomerForm((current) => ({ ...current, [field]: value }));
@@ -1139,23 +1122,50 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                   {footerContent.contactTitle}
                 </h4>
                 <p className="text-sm leading-7 text-stone-500/80">{footerContent.contactDescription}</p>
-                {socialLinks.length > 0 ? (
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    {socialLinks.map((item) => (
+                {facebookLink || instagramLink || tiktokLink ? (
+                  <div className="mt-3 flex items-center gap-3 sm:gap-4">
+                    {facebookLink ? (
                       <a
-                        key={item.key}
-                        href={item.href}
+                        href={facebookLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={item.label}
-                        className="group inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-stone-500/70 transition duration-200 hover:scale-105 hover:text-stone-900"
+                        aria-label="Facebook"
+                        className="group inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/80 text-stone-500/70 transition duration-200 hover:scale-105 hover:text-stone-900"
                       >
-                        <span className="transition-opacity duration-200 group-hover:opacity-100">
-                          {item.icon}
+                        <span className="opacity-80 transition duration-200 group-hover:opacity-100">
+                          <FacebookIcon />
                         </span>
-                        <span className="sr-only">{item.label}</span>
+                        <span className="sr-only">Facebook</span>
                       </a>
-                    ))}
+                    ) : null}
+                    {instagramLink ? (
+                      <a
+                        href={instagramLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Instagram"
+                        className="group inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/80 text-stone-500/70 transition duration-200 hover:scale-105 hover:text-stone-900"
+                      >
+                        <span className="opacity-80 transition duration-200 group-hover:opacity-100">
+                          <InstagramIcon />
+                        </span>
+                        <span className="sr-only">Instagram</span>
+                      </a>
+                    ) : null}
+                    {tiktokLink ? (
+                      <a
+                        href={tiktokLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="TikTok"
+                        className="group inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/80 text-stone-500/70 transition duration-200 hover:scale-105 hover:text-stone-900"
+                      >
+                        <span className="opacity-80 transition duration-200 group-hover:opacity-100">
+                          <TikTokIcon />
+                        </span>
+                        <span className="sr-only">TikTok</span>
+                      </a>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
