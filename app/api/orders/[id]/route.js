@@ -20,7 +20,8 @@ export async function DELETE(request, { params }) {
   try {
     requireAdmin(request);
 
-    const orderId = parseOrderId(params.id);
+    const resolvedParams = await Promise.resolve(params);
+    const orderId = parseOrderId(resolvedParams?.id);
     if (!orderId) {
       return NextResponse.json({ message: "Invalid order id." }, { status: 400 });
     }
