@@ -1103,9 +1103,9 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
         ) : null}
 
         <footer className="mt-10 pb-6">
-          <div className="luxury-card mx-auto max-w-[1200px] rounded-[32px] px-6 py-8 sm:px-8 sm:py-10">
-            <div className="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
-              <div className="space-y-4">
+          <div className="luxury-card mx-auto max-w-[1200px] rounded-[32px] px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.95fr)] lg:gap-10">
+              <div className="space-y-4 lg:max-w-[320px]">
                 <h3 className="text-xl font-bold tracking-[0.18em] text-stone-900">
                   {footerContent.brandTitle}
                 </h3>
@@ -1119,24 +1119,8 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
                 <h4 className="text-sm font-semibold tracking-[0.18em] text-stone-900">
                   {footerContent.productTitle}
                 </h4>
-                <p className="text-sm leading-8 text-stone-500/80">
-                  {footerContent.productItems.map((item, index) => (
-                    <span key={item}>
-                      {item}
-                      {index < footerContent.productItems.length - 1 ? (
-                        <span className="px-2 text-stone-300">·</span>
-                      ) : null}
-                    </span>
-                  ))}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold tracking-[0.18em] text-stone-900">
-                  {footerContent.supportTitle}
-                </h4>
-                <ul className="space-y-3 text-sm text-stone-500/80">
-                  {footerContent.supportItems.map((item) => (
+                <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-stone-500/80">
+                  {footerContent.productItems.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
@@ -1144,9 +1128,22 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
 
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold tracking-[0.18em] text-stone-900">
+                  {footerContent.supportTitle}
+                </h4>
+                <ul className="space-y-3 text-sm leading-7 text-stone-500/80">
+                  {footerContent.supportItems.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="space-y-4 lg:justify-self-end">
+                <h4 className="text-sm font-semibold tracking-[0.18em] text-stone-900">
                   {footerContent.contactTitle}
                 </h4>
-                <p className="text-sm leading-7 text-stone-500/80">{footerContent.contactDescription}</p>
+                <p className="max-w-[240px] text-sm leading-7 text-stone-500/80">
+                  {footerContent.contactDescription}
+                </p>
                 <div className="mt-3 flex items-center gap-3 sm:gap-4">
                   {socialItems.map((item) =>
                     item.href ? (
@@ -1177,11 +1174,9 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
               </div>
             </div>
 
-            <div className="mt-8 border-t border-stone-200/80 pt-5">
-              <p className="text-xs tracking-[0.18em] text-stone-400/90">
-                {footerContent.copyright}
-              </p>
-              <p className="mt-2 text-xs text-stone-500/70">{footerContent.designedBy}</p>
+            <div className="mt-8 flex flex-col gap-2 border-t border-stone-200/80 pt-5 text-xs text-stone-500/75 sm:flex-row sm:items-center sm:justify-between">
+              <p className="tracking-[0.18em] text-stone-400/90">{footerContent.copyright}</p>
+              <p>{footerContent.designedBy}</p>
             </div>
           </div>
         </footer>
