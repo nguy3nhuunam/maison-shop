@@ -64,6 +64,33 @@ function resolveFomoContent(item, stock) {
     .replaceAll("{{stock}}", String(stockValue));
 }
 
+function resolveSelectedImages(product, color, selectedVariant) {
+  const productImages = Array.isArray(product?.images) ? product.images.filter(Boolean) : [];
+  const colorImages = Array.isArray(product?.variants)
+    ? [
+        ...new Set(
+          product.variants
+            .filter((variant) => !color || variant.color === color)
+            .flatMap((variant) => (Array.isArray(variant.images) ? variant.images : []))
+            .filter(Boolean),
+        ),
+      ]
+    : [];
+  const selectedVariantImages = Array.isArray(selectedVariant?.images)
+    ? selectedVariant.images.filter(Boolean)
+    : [];
+
+  if (colorImages.length > 0) {
+    return colorImages;
+  }
+
+  if (selectedVariantImages.length > 0) {
+    return selectedVariantImages;
+  }
+
+  return productImages;
+}
+
 export default function ProductDetailSheet({
   product,
   products,
@@ -86,6 +113,7 @@ export default function ProductDetailSheet({
 }) {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [localMessage, setLocalMessage] = useState("");
   const [fomoIndex, setFomoIndex] = useState(0);
@@ -98,6 +126,7 @@ export default function ProductDetailSheet({
     const firstVariant = getFirstAvailableVariant(product);
     setSelectedSize(firstVariant?.size || "");
     setSelectedColor(firstVariant?.color || "");
+    setSelectedImageIndex(0);
     setQuantity(firstVariant?.stock > 0 ? 1 : 0);
     setLocalMessage("");
     setFomoIndex(0);
@@ -115,6 +144,11 @@ export default function ProductDetailSheet({
     () => (product ? getSelectableColors(product, selectedSize) : []),
     [product, selectedSize],
   );
+  const selectedImages = useMemo(
+    () => (product ? resolveSelectedImages(product, selectedColor, selectedVariant) : []),
+    [product, selectedColor, selectedVariant],
+  );
+  const activeImage = selectedImages[selectedImageIndex] || selectedImages[0] || product?.image || "";
   const comboTiers = useMemo(
     () => (product ? getComboTiers(product.basePrice, product.discountPercent) : []),
     [product],
@@ -151,6 +185,14 @@ export default function ProductDetailSheet({
     return () => window.clearInterval(interval);
   }, [open, resolvedFomo.length]);
 
+  useEffect(() => {
+    if (selectedImageIndex < selectedImages.length) {
+      return;
+    }
+
+    setSelectedImageIndex(0);
+  }, [selectedImageIndex, selectedImages]);
+
   if (!product) {
     return null;
   }
@@ -167,6 +209,9 @@ export default function ProductDetailSheet({
 
     setSelectedSize(size);
     setSelectedColor(matchingVariant?.color || "");
+    if ((matchingVariant?.color || "") !== selectedColor) {
+      setSelectedImageIndex(0);
+    }
     setQuantity(matchingVariant?.stock > 0 ? 1 : 0);
     setLocalMessage("");
   }
@@ -183,6 +228,7 @@ export default function ProductDetailSheet({
 
     setSelectedColor(color);
     setSelectedSize(matchingVariant?.size || "");
+    setSelectedImageIndex(0);
     setQuantity(matchingVariant?.stock > 0 ? 1 : 0);
     setLocalMessage("");
   }
@@ -203,7 +249,7 @@ export default function ProductDetailSheet({
       productId: product.id,
       variantId: selectedVariant.id,
       name: product.name,
-      image: product.image,
+      image: activeImage,
       size: selectedVariant.size,
       color: selectedVariant.color,
       quantity,
@@ -254,13 +300,45 @@ export default function ProductDetailSheet({
 
             <div className="mt-6 grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
               <div className="space-y-5">
-                <div className="overflow-hidden rounded-[28px] bg-[#f2eadf]">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="aspect-[4/5] w-full object-cover"
-                  />
-                </div>
+                {activeImage ? (
+                  <div className="space-y-3">
+                    <div className="overflow-hidden rounded-[28px] bg-[#f2eadf]">
+                      <img
+                        key={activeImage}
+                        src={activeImage}
+                        alt={product.name}
+                        className="fade-rise aspect-[4/5] w-full object-cover"
+                      />
+                    </div>
+
+                    {selectedImages.length > 1 ? (
+                      <div className="flex gap-3 overflow-x-auto pb-1">
+                        {selectedImages.map((image, index) => (
+                          <button
+                            key={`${image}-${index}`}
+                            type="button"
+                            onClick={() => setSelectedImageIndex(index)}
+                            className={`shrink-0 overflow-hidden rounded-[20px] border transition ${
+                              selectedImageIndex === index
+                                ? "border-stone-900 shadow-[0_10px_24px_rgba(22,18,13,0.12)]"
+                                : "border-stone-200"
+                            }`}
+                          >
+                            <img
+                              src={image}
+                              alt={`${product.name} ${index + 1}`}
+                              className="h-20 w-16 object-cover sm:h-24 sm:w-20"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="flex aspect-[4/5] items-center justify-center rounded-[28px] bg-[#f2eadf] text-sm text-stone-400">
+                    {t.productPreviewEmpty}
+                  </div>
+                )}
 
                 <div className="rounded-[28px] bg-white p-5">
                   <div className="border-b border-stone-100 pb-5">
