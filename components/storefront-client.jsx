@@ -1103,7 +1103,7 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
         ) : null}
 
         <footer className="mt-10 pb-6">
-          <div className="luxury-card mx-auto max-w-[1200px] rounded-[32px] px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+          <div className="luxury-card w-full rounded-[32px] px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.95fr)] lg:gap-10">
               <div className="space-y-4 lg:max-w-[320px]">
                 <h3 className="text-xl font-bold tracking-[0.18em] text-stone-900">
