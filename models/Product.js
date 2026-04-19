@@ -35,6 +35,7 @@ const ProductSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 },
     images: { type: [String], default: [] },
     category: { type: String, enum: ["nam", "nu"], required: true },
+    tags: { type: [String], default: [] },
     genderType: {
       type: String,
       enum: ["male", "female", "unisex"],

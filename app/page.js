@@ -1,14 +1,23 @@
 import StorefrontClient from "@/components/storefront-client";
-import { getActiveFomoItems, getActiveProducts, getSettings } from "@/lib/db";
+import { getActiveFomoItems, getActiveProducts, getActiveTags, getSettings } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [products, settings, fomoItems] = await Promise.all([
+  const [products, settings, fomoItems, tags] = await Promise.all([
     getActiveProducts(),
     getSettings(),
     getActiveFomoItems(),
+    getActiveTags(),
   ]);
 
-  return <StorefrontClient products={products} settings={settings} fomoItems={fomoItems} />;
+  return (
+    <StorefrontClient
+      products={products}
+      settings={settings}
+      fomoItems={fomoItems}
+      tags={tags}
+      activeTagSlug="all"
+    />
+  );
 }

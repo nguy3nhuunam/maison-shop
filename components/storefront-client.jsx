@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AddressImageInput from "@/components/address-image-input";
+import ProductList from "@/components/product-list";
 import ProductDetailSheet from "@/components/product-detail-sheet";
+import TagList from "@/components/tag-list";
 import { formatCurrency } from "@/lib/currency";
 import {
   getDiscountedUnitPrice,
@@ -247,14 +249,19 @@ function normalizeExternalUrl(value) {
     : `https://${rawValue}`;
 }
 
-export default function StorefrontClient({ products, settings, fomoItems }) {
+export default function StorefrontClient({
+  products,
+  settings,
+  fomoItems,
+  tags = [],
+  activeTagSlug = "all",
+}) {
   const [catalog, setCatalog] = useState(products);
   const [language, setLanguage] = useState("vi");
   const [heroSlogan, setHeroSlogan] = useState("");
   const [heroSubtext, setHeroSubtext] = useState("");
   const [heroReady, setHeroReady] = useState(false);
   const [logoVisible, setLogoVisible] = useState(true);
-  const [filter, setFilter] = useState("all");
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -270,6 +277,10 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
   const [applyingVoucher, setApplyingVoucher] = useState(false);
   const [customerForm, setCustomerForm] = useState(EMPTY_CUSTOMER_FORM);
   const [viewedIds, setViewedIds] = useState([]);
+
+  useEffect(() => {
+    setCatalog(products);
+  }, [products]);
 
   useEffect(() => {
     const savedLanguage = window.localStorage.getItem(LANGUAGE_KEY);
@@ -423,8 +434,17 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const pricing = getOrderPricing(cart, voucher?.discountPercent || 0);
   const total = pricing.total;
-  const filteredProducts =
-    filter === "all" ? catalog : catalog.filter((product) => product.category === filter);
+  const activeTag = useMemo(
+    () => tags.find((tag) => tag.slug === activeTagSlug) || null,
+    [activeTagSlug, tags],
+  );
+  const filteredProducts = useMemo(
+    () =>
+      activeTagSlug === "all"
+        ? catalog
+        : catalog.filter((product) => Array.isArray(product.tags) && product.tags.includes(activeTagSlug)),
+    [activeTagSlug, catalog],
+  );
   const footerContent =
     language === "zh"
       ? {
@@ -787,11 +807,6 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
     }
   }
 
-  const filterTabs = [
-    { key: "all", label: t.all },
-    { key: "nam", label: t.men },
-    { key: "nu", label: t.women },
-  ];
   const languageOptions = [
     { key: "vi", label: "VIE", flag: "🇻🇳" },
     { key: "zh", label: "中文", flag: "🇹🇼" },
@@ -900,33 +915,14 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
             <div className="w-full max-w-[360px] justify-self-start rounded-[22px] border border-white/60 bg-[linear-gradient(135deg,rgba(179,138,69,0.1),rgba(255,255,255,0.94))] p-[clamp(10px,1.1vw,14px)] shadow-[0_10px_24px_rgba(43,34,24,0.04)] sm:max-w-none lg:justify-self-end">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.32em] text-stone-400">
-                  {t.filterLabel}
+                  {t("tagFilterLabel")}
                 </p>
                 <div className="rounded-full bg-white/90 px-2.5 py-1 text-[clamp(10px,0.78vw,11px)] font-medium text-stone-500">
                   {cartCount} {t.cartCount}
                 </div>
               </div>
 
-              <div className="mt-2.5 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
-                {filterTabs.map((tab) => {
-                  const active = filter === tab.key;
-
-                  return (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setFilter(tab.key)}
-                      className={`min-w-0 rounded-full px-[clamp(10px,1vw,14px)] py-[clamp(6px,0.7vw,8px)] text-center text-[clamp(13px,1vw,15px)] font-medium transition ${
-                        active
-                          ? "bg-stone-900 text-white"
-                          : "bg-white/90 text-stone-600 hover:text-stone-900"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <TagList tags={tags} activeSlug={activeTagSlug} allLabel={t.all} />
 
               <div className="mt-2.5 grid grid-cols-2 gap-2 text-[clamp(13px,0.95vw,14px)] text-stone-500">
                 <div className="rounded-[18px] border border-white/70 bg-white/90 px-3 py-2.5">
@@ -956,117 +952,18 @@ export default function StorefrontClient({ products, settings, fomoItems }) {
           </div>
         ) : null}
 
-        <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
-          {filteredProducts.length === 0 ? (
-            <div className="luxury-card col-span-full rounded-[32px] p-10 text-center text-sm text-stone-500">
-              {t.emptyState}
-            </div>
-          ) : null}
-
-          {filteredProducts.map((product) => {
-            const soldOut = product.totalStock <= 0;
-            const discountedPrice = getDiscountedUnitPrice(
-              product.basePrice,
-              product.discountPercent,
-            );
-
-            return (
-              <article
-                key={product.id}
-                className="luxury-card group flex h-full flex-col rounded-[30px] p-3 lg:p-4"
-              >
-                <button
-                  type="button"
-                  onClick={() => openProductDetails(product.id)}
-                  className="overflow-hidden rounded-[24px] bg-[#f2eadf] text-left"
-                >
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="aspect-[4/5] w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                </button>
-
-                <div className="flex flex-1 flex-col px-1 pt-4">
-                  <div className="flex flex-1 flex-col">
-                    <div className="space-y-2">
-                      <h3 className="text-base font-semibold lg:text-lg">{product.name}</h3>
-                      <p
-                        className="min-h-[3rem] overflow-hidden text-sm leading-6 text-stone-500"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitBoxOrient: "vertical",
-                          WebkitLineClamp: 2,
-                        }}
-                      >
-                        {product.shortDescription || product.description}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {product.discountPercent > 0 ? (
-                          <span className="rounded-full bg-stone-900 px-3 py-1 text-[11px] font-semibold text-white">
-                            {t("discountBadge", { percent: product.discountPercent })}
-                          </span>
-                        ) : null}
-                        {product.isFreeShip ? (
-                          <span className="rounded-full bg-[#f6efe2] px-3 py-1 text-[11px] font-semibold text-[#b38a45]">
-                            {t("freeShipBadge")}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm uppercase tracking-[0.2em] text-[#b38a45]">
-                          {t("fromLabel")}
-                        </p>
-                        <div className="text-right">
-                          {product.discountPercent > 0 ? (
-                            <p className="text-sm text-stone-400 line-through">
-                              {formatCurrency(product.basePrice, currency, language)}
-                            </p>
-                          ) : null}
-                          <p className="text-lg font-bold">
-                            {formatCurrency(discountedPrice, currency, language)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-stone-400">
-                        <span>
-                          {fillTemplate(t.variantCountLabel, { count: product.variants.length })}
-                        </span>
-                        <span>
-                          {soldOut
-                            ? t.soldOut
-                            : fillTemplate(t.stockLeft, { count: product.totalStock })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-auto grid gap-2 pt-4">
-                    <button
-                      type="button"
-                      disabled={soldOut}
-                      onClick={() => openProductDetails(product.id)}
-                      className="rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#b38a45] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t.buyNow}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={soldOut}
-                      onClick={() => openProductDetails(product.id)}
-                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition hover:border-[#b38a45] hover:text-[#b38a45] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t.addToCart}
-                    </button>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </section>
+        <ProductList
+          products={filteredProducts}
+          currency={currency}
+          language={language}
+          t={t}
+          onProductSelect={openProductDetails}
+          emptyMessage={
+            activeTag
+              ? t("emptyTagState", { tag: activeTag.name })
+              : t.emptyState
+          }
+        />
 
         {recentlyViewedProducts.length > 0 ? (
           <section className="mt-12">

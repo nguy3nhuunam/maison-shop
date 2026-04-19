@@ -93,6 +93,7 @@ export default function ProductForm({ product }) {
       discountPercent: "",
       isFreeShip: false,
       category: "nu",
+      tags: [],
       status: "active",
       description: "",
       primaryImage: "",
@@ -111,6 +112,7 @@ export default function ProductForm({ product }) {
           discountPercent: product.discountPercent ? String(product.discountPercent) : "",
           isFreeShip: Boolean(product.isFreeShip),
           category: product.category,
+          tags: Array.isArray(product.tags) ? product.tags : [],
           status: product.status,
           description: product.description,
           primaryImage: product.images?.[0] || product.image || "",
@@ -127,6 +129,8 @@ export default function ProductForm({ product }) {
   );
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(product?.images?.[0] || product?.image || "");
+  const [availableTags, setAvailableTags] = useState([]);
+  const [tagsLoading, setTagsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingColorKey, setUploadingColorKey] = useState("");
   const [error, setError] = useState("");
@@ -143,8 +147,36 @@ export default function ProductForm({ product }) {
     return () => URL.revokeObjectURL(objectUrl);
   }, [file, form.primaryImage, form.colorBlocks]);
 
+  useEffect(() => {
+    async function loadTags() {
+      try {
+        const data = await adminFetch("/api/tags?includeAll=true");
+        setAvailableTags(data.tags || []);
+      } catch (loadError) {
+        setError(loadError.message || t("productTagsLoadError"));
+      } finally {
+        setTagsLoading(false);
+      }
+    }
+
+    loadTags();
+  }, [t]);
+
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function toggleTag(tagSlug) {
+    setForm((current) => {
+      const selectedTags = Array.isArray(current.tags) ? current.tags : [];
+
+      return {
+        ...current,
+        tags: selectedTags.includes(tagSlug)
+          ? selectedTags.filter((value) => value !== tagSlug)
+          : [...selectedTags, tagSlug],
+      };
+    });
   }
 
   function updateVariant(index, field, value) {
@@ -340,6 +372,7 @@ export default function ProductForm({ product }) {
         isFreeShip: Boolean(form.isFreeShip),
         images: normalizeImages([primaryImage, ...galleryImages]),
         category: form.category,
+        tags: form.tags,
         status: form.status,
         variants: variantsWithImages,
       };
@@ -428,6 +461,47 @@ export default function ProductForm({ product }) {
           className="min-h-14 w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
         />
       </label>
+
+      <section className="rounded-[28px] border border-stone-200 bg-white p-5">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-stone-900">{t("productTagsTitle")}</h2>
+          <p className="text-sm text-stone-500">{t("productTagsDescription")}</p>
+        </div>
+
+        {tagsLoading ? <p className="mt-4 text-sm text-stone-500">{t("productTagsLoading")}</p> : null}
+
+        {!tagsLoading && availableTags.length > 0 ? (
+          <div className="mt-5 flex flex-wrap gap-3">
+            {availableTags.map((tag) => {
+              const active = form.tags.includes(tag.slug);
+
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.slug)}
+                  className={`rounded-full border px-4 py-3 text-sm transition ${
+                    active
+                      ? "border-stone-900 bg-stone-900 text-white"
+                      : "border-stone-200 bg-[#fcfaf6] text-stone-700"
+                  }`}
+                >
+                  <span>{tag.name}</span>
+                  <span className={`ml-2 text-xs ${active ? "text-white/80" : "text-stone-400"}`}>
+                    /{tag.slug}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {!tagsLoading && availableTags.length === 0 ? (
+          <div className="mt-4 rounded-2xl bg-[#fcfaf6] px-4 py-5 text-sm text-stone-400">
+            {t("productTagsEmpty")}
+          </div>
+        ) : null}
+      </section>
 
       <section className="mt-3 rounded-[28px] border border-stone-200 bg-white p-5 md:mt-4 md:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

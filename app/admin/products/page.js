@@ -96,6 +96,18 @@ export default function AdminProductsPage() {
                           <p className="mt-1 text-stone-500">
                             {product.category === "nam" ? t("categoryNam") : t("categoryNu")}
                           </p>
+                          {product.tags?.length ? (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {product.tags.map((tag) => (
+                                <span
+                                  key={`${product.id}-${tag}`}
+                                  className="rounded-full bg-[#f6efe2] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-[#b38a45]"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                           <p className="mt-1 max-w-sm text-stone-400">
                             {product.shortDescription || product.description}
                           </p>
