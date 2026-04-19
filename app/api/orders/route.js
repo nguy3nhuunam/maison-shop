@@ -9,6 +9,7 @@ import {
   validateVoucher,
 } from "@/lib/db";
 import { isCloudinaryConfigured, uploadDataUri } from "@/lib/cloudinary";
+import { getDailyExchangeRate } from "@/lib/exchange-rate";
 import { appendOrderToSheet } from "@/lib/googleSheets";
 import { getOrderPricing } from "@/lib/pricing";
 
@@ -20,6 +21,18 @@ function requireAdmin(request) {
     throw new Error("UNAUTHORIZED");
   }
   verifyAdminToken(token);
+}
+
+function convertAmountForOrder(value, currency, rate) {
+  const numericValue = Number(value || 0);
+  return currency === "VND" ? Math.round(numericValue * rate) : numericValue;
+}
+
+function convertReservedItemsForOrder(items, currency, rate) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    ...item,
+    price: convertAmountForOrder(item.price, currency, rate),
+  }));
 }
 
 export async function GET(request) {
@@ -49,6 +62,9 @@ export async function POST(request) {
       addressImage: payload.addressImage || "",
     };
     const voucherCode = String(payload.voucherCode || "").trim();
+    const currency = payload.currency === "VND" ? "VND" : "TWD";
+    const language = payload.language === "zh" ? "zh" : payload.language === "vi" ? "vi" : "unknown";
+    const channel = String(payload.channel || "storefront").trim() || "storefront";
 
     if (!customer.name || !customer.phone || (!customer.addressText && !customer.addressImage)) {
       return NextResponse.json(
@@ -68,6 +84,11 @@ export async function POST(request) {
     }
 
     const pricing = getOrderPricing(reservedItems, voucher?.discountPercent || 0);
+    const rateData = currency === "VND" ? await getDailyExchangeRate() : { rate: 1 };
+    const appliedRate = Number(rateData?.rate || 1);
+    const orderItems = convertReservedItemsForOrder(reservedItems, currency, appliedRate);
+    const orderTotal = convertAmountForOrder(pricing.total, currency, appliedRate);
+    const orderVoucherDiscount = convertAmountForOrder(pricing.voucherDiscount, currency, appliedRate);
     let addressImageValue = customer.addressImage;
     if (addressImageValue?.startsWith("data:image/")) {
       try {
@@ -90,11 +111,16 @@ export async function POST(request) {
         phone: customer.phone,
         addressText: customer.addressText,
         addressImage: addressImageValue,
-        items: reservedItems,
-        total: pricing.total,
-        currency: "TWD",
+        items: orderItems,
+        total: orderTotal,
+        currency,
+        baseTotal: pricing.total,
+        baseCurrency: "TWD",
+        language,
+        channel,
         voucherCode: voucher?.code || "",
-        voucherDiscount: pricing.voucherDiscount,
+        voucherDiscount: orderVoucherDiscount,
+        baseVoucherDiscount: pricing.voucherDiscount,
       });
       if (voucher?.code) {
         await incrementVoucherUsage(voucher.code);
@@ -112,9 +138,9 @@ export async function POST(request) {
 
     return NextResponse.json({
       ok: true,
-      total: pricing.total,
+      total: orderTotal,
       voucherCode: voucher?.code || "",
-      voucherDiscount: pricing.voucherDiscount,
+      voucherDiscount: orderVoucherDiscount,
     });
   } catch (error) {
     return NextResponse.json(

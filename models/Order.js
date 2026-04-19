@@ -28,8 +28,13 @@ const OrderSchema = new mongoose.Schema(
     items: { type: [OrderItemSchema], default: [] },
     total: { type: Number, required: true, min: 0 },
     currency: { type: String, default: "TWD" },
+    baseTotal: { type: Number, required: true, min: 0, default: 0 },
+    baseCurrency: { type: String, default: "TWD" },
+    language: { type: String, enum: ["vi", "zh", "unknown"], default: "unknown" },
+    channel: { type: String, default: "storefront", trim: true },
     voucherCode: { type: String, default: "", trim: true },
     voucherDiscount: { type: Number, default: 0, min: 0 },
+    baseVoucherDiscount: { type: Number, default: 0, min: 0 },
     createdAt: { type: Date, default: Date.now },
   },
   {

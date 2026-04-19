@@ -17,8 +17,17 @@ const ReviewSchema = new mongoose.Schema(
   {
     id: { type: Number, required: true },
     name: { type: String, required: true, trim: true },
+    phone: { type: String, default: "", trim: true },
     content: { type: String, required: true, trim: true },
     rating: { type: Number, min: 1, max: 5, default: 5 },
+    images: { type: [String], default: [] },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    verifiedBuyer: { type: Boolean, default: false },
+    approvedAt: { type: Date, default: null },
     createdAt: { type: Date, default: Date.now },
   },
   {

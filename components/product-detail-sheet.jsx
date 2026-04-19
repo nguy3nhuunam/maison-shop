@@ -91,6 +91,20 @@ function resolveSelectedImages(product, color, selectedVariant) {
   return productImages;
 }
 
+function readFilesAsDataUrls(fileList) {
+  return Promise.all(
+    Array.from(fileList || []).map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("FILE_READ_FAILED"));
+          reader.readAsDataURL(file);
+        }),
+    ),
+  );
+}
+
 export default function ProductDetailSheet({
   product,
   products,
@@ -117,6 +131,15 @@ export default function ProductDetailSheet({
   const [quantity, setQuantity] = useState(1);
   const [localMessage, setLocalMessage] = useState("");
   const [fomoIndex, setFomoIndex] = useState(0);
+  const [reviewForm, setReviewForm] = useState({
+    name: "",
+    phone: "",
+    rating: 5,
+    content: "",
+    images: [],
+  });
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   useEffect(() => {
     if (!product) {
@@ -130,6 +153,14 @@ export default function ProductDetailSheet({
     setQuantity(firstVariant?.stock > 0 ? 1 : 0);
     setLocalMessage("");
     setFomoIndex(0);
+    setReviewMessage("");
+    setReviewForm({
+      name: "",
+      phone: "",
+      rating: 5,
+      content: "",
+      images: [],
+    });
   }, [product]);
 
   const selectedVariant = useMemo(
@@ -192,6 +223,97 @@ export default function ProductDetailSheet({
 
     setSelectedImageIndex(0);
   }, [selectedImageIndex, selectedImages]);
+
+  useEffect(() => {
+    setReviewForm((current) => ({
+      ...current,
+      name: current.name || customerForm?.name || "",
+      phone: current.phone || customerForm?.phone || "",
+    }));
+  }, [customerForm?.name, customerForm?.phone]);
+
+  const reviewCopy =
+    t.language === "zh"
+      ? {
+          title: "Submit review",
+          note: "Review will appear after admin approval. Matching order name and phone will be marked verified buyer.",
+          name: "Name",
+          phone: "Phone",
+          rating: "Rating",
+          content: "Review content",
+          contentPlaceholder: "Share fit, fabric, shipping or real-life photos...",
+          image: "Review images",
+          addImage: "Add photos",
+          removeImage: "Remove",
+          submit: "Send review",
+          submitting: "Sending...",
+          success: "Review received. It will appear after approval.",
+          error: "Unable to submit review right now.",
+        }
+      : {
+          title: "Goi review",
+          note: "Review moi se hien thi sau khi admin duyet. Neu ten va so dien thoai khop don da mua, he thong se gan verified buyer.",
+          name: "Ho va ten",
+          phone: "So dien thoai",
+          rating: "Danh gia",
+          content: "Noi dung review",
+          contentPlaceholder: "Chia se cam nhan ve form, chat vai, giao hang hoac anh that...",
+          image: "Anh review",
+          addImage: "Them anh",
+          removeImage: "Xoa",
+          submit: "Gui review",
+          submitting: "Dang gui...",
+          success: "Da ghi nhan review. Review se hien thi sau khi duoc duyet.",
+          error: "Khong the gui review luc nay.",
+        };
+
+  async function handleReviewImageChange(event) {
+    try {
+      const nextImages = await readFilesAsDataUrls(event.target.files);
+      setReviewForm((current) => ({
+        ...current,
+        images: [...current.images, ...nextImages].slice(0, 4),
+      }));
+    } catch {
+      setReviewMessage(reviewCopy.error);
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  async function submitReview(event) {
+    event.preventDefault();
+    setReviewSubmitting(true);
+    setReviewMessage("");
+
+    try {
+      const response = await fetch(`/api/products/${product.id}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reviewForm),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || reviewCopy.error);
+      }
+
+      setReviewForm({
+        name: customerForm?.name || reviewForm.name,
+        phone: customerForm?.phone || reviewForm.phone,
+        rating: 5,
+        content: "",
+        images: [],
+      });
+      setReviewMessage(reviewCopy.success);
+    } catch (error) {
+      setReviewMessage(error.message || reviewCopy.error);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
 
   if (!product) {
     return null;
@@ -443,17 +565,164 @@ export default function ProductDetailSheet({
                         {product.reviews.slice(0, 3).map((review) => (
                           <div key={review.id} className="rounded-2xl bg-white p-3">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium text-stone-800">{review.name}</span>
-                              <span className="text-[#b38a45]">
-                                {"★".repeat(review.rating || 5)}
-                              </span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-stone-800">{review.name}</span>
+                                {review.verifiedBuyer ? (
+                                  <span className="rounded-full bg-stone-900 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
+                                    verified
+                                  </span>
+                                ) : null}
+                              </div>
+                              <span className="text-[#b38a45]">{"★".repeat(review.rating || 5)}</span>
                             </div>
                             <p className="mt-2 text-sm text-stone-500">{review.content}</p>
+                            {review.images?.length ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {review.images.map((image) => (
+                                  <a key={image} href={image} target="_blank" rel="noreferrer">
+                                    <img
+                                      src={image}
+                                      alt={review.name}
+                                      className="h-16 w-16 rounded-2xl object-cover"
+                                    />
+                                  </a>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : null}
+
+                  <form onSubmit={submitReview} className="mt-5 rounded-[24px] bg-white p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900">{reviewCopy.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-stone-500">{reviewCopy.note}</p>
+                      </div>
+                      <span className="rounded-full bg-[#f6efe2] px-3 py-1 text-[11px] font-semibold text-[#b38a45]">
+                        {product.reviews?.length || 0} reviews
+                      </span>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      <label className="space-y-2 text-sm text-stone-600">
+                        <span>{reviewCopy.name}</span>
+                        <input
+                          required
+                          value={reviewForm.name}
+                          onChange={(event) =>
+                            setReviewForm((current) => ({ ...current, name: event.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                        />
+                      </label>
+
+                      <label className="space-y-2 text-sm text-stone-600">
+                        <span>{reviewCopy.phone}</span>
+                        <input
+                          required
+                          value={reviewForm.phone}
+                          onChange={(event) =>
+                            setReviewForm((current) => ({ ...current, phone: event.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-[140px_1fr]">
+                      <label className="space-y-2 text-sm text-stone-600">
+                        <span>{reviewCopy.rating}</span>
+                        <select
+                          value={reviewForm.rating}
+                          onChange={(event) =>
+                            setReviewForm((current) => ({
+                              ...current,
+                              rating: Number(event.target.value),
+                            }))
+                          }
+                          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                        >
+                          {[5, 4, 3, 2, 1].map((value) => (
+                            <option key={value} value={value}>
+                              {value} / 5
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="space-y-2 text-sm text-stone-600">
+                        <span>{reviewCopy.content}</span>
+                        <textarea
+                          required
+                          rows={4}
+                          value={reviewForm.content}
+                          placeholder={reviewCopy.contentPlaceholder}
+                          onChange={(event) =>
+                            setReviewForm((current) => ({ ...current, content: event.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mt-4 rounded-[22px] border border-dashed border-stone-300 bg-[#fcfaf6] p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-stone-900">{reviewCopy.image}</p>
+                          <p className="mt-1 text-xs text-stone-400">PNG, JPG, WEBP. Toi da 4 anh.</p>
+                        </div>
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-stone-300 px-4 py-2 text-sm text-stone-700">
+                          <span>{reviewCopy.addImage}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleReviewImageChange}
+                          />
+                        </label>
+                      </div>
+
+                      {reviewForm.images.length ? (
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          {reviewForm.images.map((image, index) => (
+                            <div key={`${image}-${index}`} className="rounded-2xl bg-white p-2">
+                              <img
+                                src={image}
+                                alt={`review-${index + 1}`}
+                                className="h-16 w-16 rounded-xl object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setReviewForm((current) => ({
+                                    ...current,
+                                    images: current.images.filter((_, imageIndex) => imageIndex !== index),
+                                  }))
+                                }
+                                className="mt-2 w-full rounded-full border border-red-200 px-3 py-1.5 text-xs text-red-500"
+                              >
+                                {reviewCopy.removeImage}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {reviewMessage ? <p className="mt-4 text-sm text-stone-600">{reviewMessage}</p> : null}
+
+                    <button
+                      type="submit"
+                      disabled={reviewSubmitting}
+                      className="mt-5 rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#b38a45] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {reviewSubmitting ? reviewCopy.submitting : reviewCopy.submit}
+                    </button>
+                  </form>
                 </div>
               </div>
 

@@ -68,6 +68,7 @@ export default function AdminOrdersPage() {
                   <th className="pb-4">{t("ordersTime")}</th>
                   <th className="pb-4">{t("ordersCustomer")}</th>
                   <th className="pb-4">{t("ordersItems")}</th>
+                  <th className="pb-4">Source</th>
                   <th className="pb-4">{t("ordersTotal")}</th>
                   <th className="pb-4 text-right">{t("productAction")}</th>
                 </tr>
@@ -92,6 +93,12 @@ export default function AdminOrdersPage() {
                       ) : null}
                     </td>
                     <td className="py-4 text-stone-500">{order.summary}</td>
+                    <td className="py-4 text-stone-500">
+                      <div className="space-y-1">
+                        <p>{order.sourceLabel}</p>
+                        <p className="text-xs text-stone-400">{order.channel}</p>
+                      </div>
+                    </td>
                     <td className="py-4 font-semibold text-stone-900">{order.total}</td>
                     <td className="py-4 text-right">
                       <button

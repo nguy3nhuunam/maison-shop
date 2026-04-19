@@ -665,6 +665,9 @@ export default function StorefrontClient({
         phone: customerForm.phone,
         addressText: customerForm.addressText,
         addressImage: customerForm.addressImage,
+        language,
+        currency,
+        channel: "storefront",
         voucherCode: voucher?.code || "",
         items: items.map((item) => ({
           productId: item.productId,
