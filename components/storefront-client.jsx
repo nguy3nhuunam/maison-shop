@@ -9,6 +9,12 @@ import TagList from "@/components/tag-list";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatCurrency } from "@/lib/currency";
 import {
+  getLocalizedHomepageText,
+  isCampaignActive,
+  resolveCampaignHref,
+  sanitizeHomepageContent,
+} from "@/lib/homepage-config";
+import {
   getDiscountedUnitPrice,
   getLineTotal,
   getOrderPricing,
@@ -21,6 +27,7 @@ const VIEWED_KEY = "maison-viewed-products";
 const HERO_SLOGAN_KEY = "maison-hero-slogan";
 const HERO_SUBTEXT_KEY = "maison-hero-subtext";
 const VOUCHER_KEY = "maison-voucher";
+const CAMPAIGN_POPUP_KEY = "maison-campaign-popup";
 const BRAND_LOGO_SRC = "/brand/maison-logo.png";
 const EMPTY_CUSTOMER_FORM = {
   name: "",
@@ -233,6 +240,55 @@ function normalizeExternalUrl(value) {
     : `https://${rawValue}`;
 }
 
+function getHomepageSectionProducts(section, products) {
+  if (!section?.enabled) {
+    return [];
+  }
+
+  const limit = Number.parseInt(section.limit, 10) || 4;
+  const sortedByCreatedAt = [...products].sort(
+    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+  );
+
+  if (section.source === "sale") {
+    return sortedByCreatedAt
+      .filter((product) => Number(product.discountPercent || 0) > 0)
+      .sort((left, right) => {
+        const discountDelta = Number(right.discountPercent || 0) - Number(left.discountPercent || 0);
+        if (discountDelta !== 0) {
+          return discountDelta;
+        }
+
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      })
+      .slice(0, limit);
+  }
+
+  if (section.source === "tag") {
+    return sortedByCreatedAt
+      .filter(
+        (product) =>
+          Array.isArray(product.tags) &&
+          section.tagSlug &&
+          product.tags.includes(section.tagSlug),
+      )
+      .slice(0, limit);
+  }
+
+  return sortedByCreatedAt.slice(0, limit);
+}
+
+function getCampaignStorageKey(campaign) {
+  return [
+    CAMPAIGN_POPUP_KEY,
+    campaign?.startAt || "nostart",
+    campaign?.endAt || "noend",
+    campaign?.titleVi || campaign?.titleZh || "untitled",
+    campaign?.voucherCode || "novoucher",
+    campaign?.tagSlug || "notag",
+  ].join("::");
+}
+
 export default function StorefrontClient({
   products,
   settings,
@@ -256,6 +312,7 @@ export default function StorefrontClient({
   const [quickBuyMessage, setQuickBuyMessage] = useState("");
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [orderSuccessOpen, setOrderSuccessOpen] = useState(false);
+  const [campaignPopupOpen, setCampaignPopupOpen] = useState(false);
   const [voucherInput, setVoucherInput] = useState("");
   const [voucher, setVoucher] = useState(null);
   const [voucherMessage, setVoucherMessage] = useState("");
@@ -386,9 +443,24 @@ export default function StorefrontClient({
     window.localStorage.setItem(VOUCHER_KEY, JSON.stringify(voucher));
   }, [voucher]);
 
+  const homepage = useMemo(() => sanitizeHomepageContent(settings?.homepage), [settings?.homepage]);
+  const isHomepageView = activeTagSlug === "all";
+  const configuredHeroTitle = getLocalizedHomepageText(
+    language,
+    homepage.hero.titleVi,
+    homepage.hero.titleZh,
+  );
+  const configuredHeroSubtext = getLocalizedHomepageText(
+    language,
+    homepage.hero.subtitleVi,
+    homepage.hero.subtitleZh,
+  );
+  const activeHeroEyebrow =
+    getLocalizedHomepageText(language, homepage.hero.eyebrowVi, homepage.hero.eyebrowZh) || t.brand;
   const activeHeroTitle =
-    t(heroSlogan || HERO_TITLE_KEYS[0]) || HERO_TITLES.vi[0] || HERO_SLOGANS[0];
+    configuredHeroTitle || t(heroSlogan || HERO_TITLE_KEYS[0]) || HERO_TITLES.vi[0] || HERO_SLOGANS[0];
   const activeHeroSubtext =
+    configuredHeroSubtext ||
     t(heroSubtext || HERO_SUBTEXT_KEYS[0]) ||
     HERO_DESCRIPTIONS.vi[0] ||
     HERO_SUBTEXTS.vi[0];
@@ -418,6 +490,77 @@ export default function StorefrontClient({
         : catalog.filter((product) => Array.isArray(product.tags) && product.tags.includes(activeTagSlug)),
     [activeTagSlug, catalog],
   );
+  const homepageSections = useMemo(
+    () =>
+      homepage.sections
+        .map((section) => {
+          const localizedTitle = getLocalizedHomepageText(language, section.titleVi, section.titleZh);
+          const localizedDescription = getLocalizedHomepageText(
+            language,
+            section.descriptionVi,
+            section.descriptionZh,
+          );
+
+          return {
+            ...section,
+            localizedTitle,
+            localizedDescription,
+            products: getHomepageSectionProducts(section, catalog),
+          };
+        })
+        .filter((section) => section.enabled && section.products.length > 0),
+    [catalog, homepage.sections, language],
+  );
+  const activeAnnouncement =
+    isHomepageView && isCampaignActive(homepage.announcementBar) ? homepage.announcementBar : null;
+  const activePopupCampaign =
+    isHomepageView && isCampaignActive(homepage.campaignPopup) ? homepage.campaignPopup : null;
+  const announcementHref = activeAnnouncement ? resolveCampaignHref(activeAnnouncement) : "";
+  const popupHref = activePopupCampaign ? resolveCampaignHref(activePopupCampaign) : "";
+  const announcementTitle = activeAnnouncement
+    ? getLocalizedHomepageText(language, activeAnnouncement.titleVi, activeAnnouncement.titleZh)
+    : "";
+  const announcementMessage = activeAnnouncement
+    ? getLocalizedHomepageText(language, activeAnnouncement.messageVi, activeAnnouncement.messageZh)
+    : "";
+  const announcementCtaLabel = activeAnnouncement
+    ? getLocalizedHomepageText(
+        language,
+        activeAnnouncement.ctaLabelVi,
+        activeAnnouncement.ctaLabelZh,
+        language === "zh" ? "立即查看" : "Xem ngay",
+      )
+    : "";
+  const popupTitle = activePopupCampaign
+    ? getLocalizedHomepageText(language, activePopupCampaign.titleVi, activePopupCampaign.titleZh)
+    : "";
+  const popupMessage = activePopupCampaign
+    ? getLocalizedHomepageText(language, activePopupCampaign.messageVi, activePopupCampaign.messageZh)
+    : "";
+  const popupCtaLabel = activePopupCampaign
+    ? getLocalizedHomepageText(
+        language,
+        activePopupCampaign.ctaLabelVi,
+        activePopupCampaign.ctaLabelZh,
+        language === "zh" ? "立即查看" : "Xem bộ sưu tập",
+      )
+    : "";
+
+  useEffect(() => {
+    if (!activePopupCampaign) {
+      setCampaignPopupOpen(false);
+      return;
+    }
+
+    try {
+      const storageKey = getCampaignStorageKey(activePopupCampaign);
+      const dismissed = window.sessionStorage.getItem(storageKey) === "dismissed";
+      setCampaignPopupOpen(!dismissed);
+    } catch {
+      setCampaignPopupOpen(true);
+    }
+  }, [activePopupCampaign]);
+
   const footerContent =
     language === "zh"
       ? {
@@ -481,6 +624,18 @@ export default function StorefrontClient({
     setOrderSuccessOpen(false);
     setQuickBuyMessage("");
     setCheckoutMessage("");
+  }
+
+  function closeCampaignPopup() {
+    setCampaignPopupOpen(false);
+
+    if (!activePopupCampaign) {
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(getCampaignStorageKey(activePopupCampaign), "dismissed");
+    } catch {}
   }
 
   function getCustomerNameError() {
@@ -794,12 +949,43 @@ export default function StorefrontClient({
       />
 
       <main className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
+        {activeAnnouncement ? (
+          <section className="mb-6 overflow-hidden rounded-[28px] border border-[#b38a45]/20 bg-[linear-gradient(135deg,rgba(179,138,69,0.14),rgba(255,255,255,0.96))] px-5 py-4 shadow-[0_10px_28px_rgba(43,34,24,0.05)]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="space-y-1.5">
+                {announcementTitle ? (
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#b38a45]">
+                    {announcementTitle}
+                  </p>
+                ) : null}
+                <p className="text-sm leading-6 text-stone-700">{announcementMessage}</p>
+                {activeAnnouncement.voucherCode ? (
+                  <div className="inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#b38a45]">
+                    {language === "zh"
+                      ? `優惠碼 ${activeAnnouncement.voucherCode}`
+                      : `Mã ${activeAnnouncement.voucherCode}`}
+                  </div>
+                ) : null}
+              </div>
+
+              {announcementHref ? (
+                <a
+                  href={announcementHref}
+                  className="inline-flex items-center justify-center rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#b38a45]"
+                >
+                  {announcementCtaLabel}
+                </a>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
         <section className="luxury-card overflow-hidden rounded-[32px] px-4 py-5 sm:px-5 lg:px-7 lg:py-6">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,26vw)] lg:items-start lg:gap-6">
             <div className="max-w-none sm:max-w-2xl">
               <div className="flex flex-wrap items-center gap-2.5">
                 <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.38em] text-[#b38a45]">
-                  {t.brand}
+                  {activeHeroEyebrow}
                 </p>
                 <span className="hidden h-1 w-1 rounded-full bg-[#d8c3a0] lg:inline-block" />
                 <p className="text-[clamp(11px,0.8vw,12px)] text-stone-400">{currency}</p>
@@ -820,34 +1006,54 @@ export default function StorefrontClient({
               </p>
             </div>
 
-            <div className="w-full max-w-[360px] justify-self-start rounded-[22px] border border-white/60 bg-[linear-gradient(135deg,rgba(179,138,69,0.1),rgba(255,255,255,0.94))] p-[clamp(10px,1.1vw,14px)] shadow-[0_10px_24px_rgba(43,34,24,0.04)] sm:max-w-none lg:justify-self-end">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.32em] text-stone-400">
-                  {t("tagFilterLabel")}
-                </p>
-                <div className="rounded-full bg-white/90 px-2.5 py-1 text-[clamp(10px,0.78vw,11px)] font-medium text-stone-500">
-                  {cartCount} {t.cartCount}
+            <div className="flex w-full max-w-[360px] flex-col gap-4 justify-self-start sm:max-w-none lg:justify-self-end">
+              {homepage.hero.imageUrl ? (
+                <div className="relative overflow-hidden rounded-[24px] border border-white/60 bg-stone-200 shadow-[0_10px_24px_rgba(43,34,24,0.05)]">
+                  <img
+                    src={homepage.hero.imageUrl}
+                    alt={homepage.hero.imageAlt || "MAISON hero banner"}
+                    className="aspect-[4/5] w-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(20,16,12,0),rgba(20,16,12,0.78))] px-4 py-4 text-white">
+                    <p className="text-[11px] uppercase tracking-[0.28em] text-white/70">
+                      {activeHeroEyebrow}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold leading-6">
+                      {announcementTitle || activeHeroTitle}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <TagList tags={tags} activeSlug={activeTagSlug} allLabel={t.all} />
-
-              <div className="mt-2.5 grid grid-cols-2 gap-2 text-[clamp(13px,0.95vw,14px)] text-stone-500">
-                <div className="rounded-[18px] border border-white/70 bg-white/90 px-3 py-2.5">
-                  <p className="text-[clamp(9px,0.68vw,10px)] uppercase tracking-[0.24em] text-stone-400">
-                    {t.currencyLabel}
+              <div className="rounded-[22px] border border-white/60 bg-[linear-gradient(135deg,rgba(179,138,69,0.1),rgba(255,255,255,0.94))] p-[clamp(10px,1.1vw,14px)] shadow-[0_10px_24px_rgba(43,34,24,0.04)]">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[clamp(10px,0.72vw,11px)] uppercase tracking-[0.32em] text-stone-400">
+                    {t("tagFilterLabel")}
                   </p>
-                  <p className="mt-1 text-[clamp(13px,1vw,15px)] font-semibold text-stone-900">
-                    {currency}
-                  </p>
+                  <div className="rounded-full bg-white/90 px-2.5 py-1 text-[clamp(10px,0.78vw,11px)] font-medium text-stone-500">
+                    {cartCount} {t.cartCount}
+                  </div>
                 </div>
-                <div className="rounded-[18px] border border-white/70 bg-white/90 px-3 py-2.5">
-                  <p className="text-[clamp(9px,0.68vw,10px)] uppercase tracking-[0.24em] text-stone-400">
-                    {t.cart}
-                  </p>
-                  <p className="mt-1 text-[clamp(13px,1vw,15px)] font-semibold text-stone-900">
-                    {cartCount}
-                  </p>
+
+                <TagList tags={tags} activeSlug={activeTagSlug} allLabel={t.all} />
+
+                <div className="mt-2.5 grid grid-cols-2 gap-2 text-[clamp(13px,0.95vw,14px)] text-stone-500">
+                  <div className="rounded-[18px] border border-white/70 bg-white/90 px-3 py-2.5">
+                    <p className="text-[clamp(9px,0.68vw,10px)] uppercase tracking-[0.24em] text-stone-400">
+                      {t.currencyLabel}
+                    </p>
+                    <p className="mt-1 text-[clamp(13px,1vw,15px)] font-semibold text-stone-900">
+                      {currency}
+                    </p>
+                  </div>
+                  <div className="rounded-[18px] border border-white/70 bg-white/90 px-3 py-2.5">
+                    <p className="text-[clamp(9px,0.68vw,10px)] uppercase tracking-[0.24em] text-stone-400">
+                      {t.cart}
+                    </p>
+                    <p className="mt-1 text-[clamp(13px,1vw,15px)] font-semibold text-stone-900">
+                      {cartCount}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -869,6 +1075,48 @@ export default function StorefrontClient({
               : t.emptyState
           }
         />
+
+        {isHomepageView && homepageSections.length > 0 ? (
+          <div className="mt-12 space-y-12">
+            {homepageSections.map((section) => (
+              <section key={section.key}>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.32em] text-[#b38a45]">
+                      {language === "zh" ? "首頁精選" : "Khối homepage"}
+                    </p>
+                    <h3 className="mt-2 text-2xl font-bold text-stone-900">{section.localizedTitle}</h3>
+                    {section.localizedDescription ? (
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-500">
+                        {section.localizedDescription}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="inline-flex rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    {section.source === "sale"
+                      ? language === "zh"
+                        ? "折扣來源"
+                        : "Nguồn sale"
+                      : section.source === "tag"
+                        ? language === "zh"
+                          ? `Tag ${section.tagSlug || ""}`
+                          : `Tag ${section.tagSlug || ""}`
+                        : language === "zh"
+                          ? "最新商品"
+                          : "Mới nhất"}
+                  </div>
+                </div>
+
+                <ProductList
+                  products={section.products}
+                  onProductSelect={openProductDetails}
+                  emptyMessage={language === "zh" ? "暫時沒有商品。" : "Chưa có sản phẩm phù hợp."}
+                />
+              </section>
+            ))}
+          </div>
+        ) : null}
 
         {recentlyViewedProducts.length > 0 ? (
           <section className="mt-12">
@@ -992,6 +1240,57 @@ export default function StorefrontClient({
       >
         {t.messenger}
       </a>
+
+      {campaignPopupOpen && activePopupCampaign ? (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-stone-900/45 px-4 py-6">
+          <div className="luxury-card w-full max-w-xl rounded-[32px] p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[#b38a45]">
+                  {language === "zh" ? "活動快訊" : "Campaign đang chạy"}
+                </p>
+                <h3 className="mt-2 text-3xl font-bold text-stone-900">{popupTitle}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeCampaignPopup}
+                className="rounded-full border border-stone-200 px-4 py-2 text-sm text-stone-600"
+              >
+                {t.close}
+              </button>
+            </div>
+
+            <p className="mt-4 text-sm leading-7 text-stone-600">{popupMessage}</p>
+
+            {activePopupCampaign.voucherCode ? (
+              <div className="mt-5 inline-flex rounded-full bg-[#f6efe2] px-4 py-2 text-sm font-semibold text-[#b38a45]">
+                {language === "zh"
+                  ? `優惠碼 ${activePopupCampaign.voucherCode}`
+                  : `Mã ưu đãi ${activePopupCampaign.voucherCode}`}
+              </div>
+            ) : null}
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              {popupHref ? (
+                <a
+                  href={popupHref}
+                  onClick={closeCampaignPopup}
+                  className="inline-flex items-center justify-center rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#b38a45]"
+                >
+                  {popupCtaLabel}
+                </a>
+              ) : null}
+              <button
+                type="button"
+                onClick={closeCampaignPopup}
+                className="inline-flex items-center justify-center rounded-full border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:text-stone-900"
+              >
+                {language === "zh" ? "稍後再看" : "Để sau"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div
         className={`fixed inset-0 z-40 bg-stone-900/35 transition ${cartOpen ? "visible opacity-100" : "invisible opacity-0"}`}

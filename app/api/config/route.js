@@ -38,6 +38,7 @@ export async function PUT(request) {
         instagram: payload.social?.instagram || "",
         tiktok: payload.social?.tiktok || "",
       },
+      homepage: payload.homepage,
     });
 
     return NextResponse.json({ settings });
