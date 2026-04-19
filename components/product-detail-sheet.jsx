@@ -96,8 +96,8 @@ export default function ProductDetailSheet({
   products,
   fomoItems,
   open,
-  language,
   currency,
+  rate,
   t,
   customerForm,
   onCustomerChange,
@@ -353,11 +353,11 @@ export default function ProductDetailSheet({
                       <p className="text-sm text-stone-500">{t("fromLabel")}</p>
                       {product.discountPercent > 0 ? (
                         <p className="mt-1 text-sm text-stone-400 line-through">
-                          {formatCurrency(product.basePrice, currency, language)}
+                          {formatCurrency(product.basePrice, currency, rate)}
                         </p>
                       ) : null}
                       <p className="mt-1 text-3xl font-bold text-stone-900">
-                        {formatCurrency(discountedPrice, currency, language)}
+                        {formatCurrency(discountedPrice, currency, rate)}
                       </p>
                     </div>
                     <div className="text-right text-sm text-stone-500">
@@ -384,7 +384,7 @@ export default function ProductDetailSheet({
                     {unitSavings > 0 ? (
                       <span className="rounded-full border border-stone-200 px-3 py-1 text-[11px] text-stone-600">
                         {t("promotionSavings", {
-                          amount: formatCurrency(unitSavings, currency, language),
+                          amount: formatCurrency(unitSavings, currency, rate),
                         })}
                       </span>
                     ) : null}
@@ -422,12 +422,12 @@ export default function ProductDetailSheet({
                             ) : null}
                           </div>
                           <p className="mt-3 text-lg font-bold">
-                            {formatCurrency(tier.total, currency, language)}
+                            {formatCurrency(tier.total, currency, rate)}
                           </p>
                           {tier.savings > 0 ? (
                             <p className="mt-1 text-xs opacity-80">
                               {fillTemplate(t.comboSave, {
-                                amount: formatCurrency(tier.savings, currency, language),
+                                amount: formatCurrency(tier.savings, currency, rate),
                               })}
                             </p>
                           ) : null}
@@ -671,7 +671,7 @@ export default function ProductDetailSheet({
                               {formatCurrency(
                                 getDiscountedUnitPrice(item.basePrice, item.discountPercent),
                                 currency,
-                                language,
+                                rate,
                               )}
                             </p>
                           </div>

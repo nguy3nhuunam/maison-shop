@@ -7,7 +7,7 @@ import { getDiscountedUnitPrice } from "@/lib/pricing";
 
 export default function ProductCard({ product, onSelect }) {
   const { t } = useTranslation();
-  const { currency } = useCurrency();
+  const { currency, rate } = useCurrency();
   const soldOut = product.totalStock <= 0;
   const discountedPrice = getDiscountedUnitPrice(product.basePrice, product.discountPercent);
 
@@ -59,10 +59,10 @@ export default function ProductCard({ product, onSelect }) {
               <div className="text-right">
                 {product.discountPercent > 0 ? (
                   <p className="text-sm text-stone-400 line-through">
-                    {formatCurrency(product.basePrice, currency)}
+                    {formatCurrency(product.basePrice, currency, rate)}
                   </p>
                 ) : null}
-                <p className="text-lg font-bold">{formatCurrency(discountedPrice, currency)}</p>
+                <p className="text-lg font-bold">{formatCurrency(discountedPrice, currency, rate)}</p>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-stone-400">

@@ -241,7 +241,7 @@ export default function StorefrontClient({
   activeTagSlug = "all",
 }) {
   const { language, t } = useTranslation();
-  const { currency } = useCurrency();
+  const { currency, rate } = useCurrency();
   const [catalog, setCatalog] = useState(products);
   const [heroSlogan, setHeroSlogan] = useState("");
   const [heroSubtext, setHeroSubtext] = useState("");
@@ -891,7 +891,7 @@ export default function StorefrontClient({
                       {formatCurrency(
                         getDiscountedUnitPrice(product.basePrice, product.discountPercent),
                         currency,
-                        language,
+                        rate,
                       )}
                     </p>
                   </div>
@@ -1042,14 +1042,14 @@ export default function StorefrontClient({
                       <div className="mt-1">
                         {item.discountPercent > 0 ? (
                           <p className="text-xs text-stone-400 line-through">
-                            {formatCurrency(item.price, currency, language)}
+                            {formatCurrency(item.price, currency, rate)}
                           </p>
                         ) : null}
                         <p className="text-sm text-stone-500">
                           {formatCurrency(
                             getDiscountedUnitPrice(item.price, item.discountPercent),
                             currency,
-                            language,
+                            rate,
                           )}
                         </p>
                       </div>
@@ -1097,7 +1097,7 @@ export default function StorefrontClient({
                       {formatCurrency(
                         getLineTotal(item.price, item.quantity, item.discountPercent),
                         currency,
-                        language,
+                        rate,
                       )}
                     </p>
                   </div>
@@ -1111,13 +1111,13 @@ export default function StorefrontClient({
           <div className="flex items-center justify-between text-sm text-stone-500">
             <span>{t.subtotal}</span>
             <span className="text-lg font-bold text-stone-900">
-              {formatCurrency(pricing.subtotal, currency, language)}
+              {formatCurrency(pricing.subtotal, currency, rate)}
             </span>
           </div>
           {pricing.productSavings > 0 ? (
             <p className="mt-3 text-sm text-stone-500">
               {t("checkoutPromotionSavings")}:{" "}
-              {formatCurrency(pricing.productSavings, currency, language)}
+              {formatCurrency(pricing.productSavings, currency, rate)}
             </p>
           ) : null}
           <div className="mt-4 flex gap-2">
@@ -1145,13 +1145,13 @@ export default function StorefrontClient({
           {pricing.voucherDiscount > 0 ? (
             <div className="mt-3 flex items-center justify-between text-sm text-stone-500">
               <span>{t("checkoutVoucherDiscount")}</span>
-              <span>-{formatCurrency(pricing.voucherDiscount, currency, language)}</span>
+              <span>-{formatCurrency(pricing.voucherDiscount, currency, rate)}</span>
             </div>
           ) : null}
           <div className="mt-3 flex items-center justify-between text-sm text-stone-500">
             <span>{t("checkoutGrandTotal")}</span>
             <span className="text-lg font-bold text-stone-900">
-              {formatCurrency(total, currency, language)}
+              {formatCurrency(total, currency, rate)}
             </span>
           </div>
           <button
@@ -1261,7 +1261,7 @@ export default function StorefrontClient({
                         {formatCurrency(
                           getLineTotal(item.price, item.quantity, item.discountPercent),
                           currency,
-                          language,
+                          rate,
                         )}
                       </p>
                     </div>
@@ -1272,21 +1272,21 @@ export default function StorefrontClient({
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-stone-500">{t("checkoutBeforeVoucher")}</span>
                     <span className="text-xl font-bold text-stone-900">
-                      {formatCurrency(pricing.subtotal, currency, language)}
+                      {formatCurrency(pricing.subtotal, currency, rate)}
                     </span>
                   </div>
                   {pricing.voucherDiscount > 0 ? (
                     <div className="mt-3 flex items-center justify-between">
                       <span className="text-sm text-stone-500">{t("checkoutVoucherDiscount")}</span>
                       <span className="text-sm font-semibold text-stone-900">
-                        -{formatCurrency(pricing.voucherDiscount, currency, language)}
+                        -{formatCurrency(pricing.voucherDiscount, currency, rate)}
                       </span>
                     </div>
                   ) : null}
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-sm text-stone-500">{t("checkoutGrandTotal")}</span>
                     <span className="text-xl font-bold text-stone-900">
-                      {formatCurrency(total, currency, language)}
+                      {formatCurrency(total, currency, rate)}
                     </span>
                   </div>
                   {cart.some((item) => item.isFreeShip) ? (
@@ -1338,8 +1338,8 @@ export default function StorefrontClient({
         products={catalog}
         fomoItems={fomoItems}
         open={Boolean(selectedProduct)}
-        language={language}
         currency={currency}
+        rate={rate}
         t={t}
         customerForm={customerForm}
         onCustomerChange={updateCustomerField}
