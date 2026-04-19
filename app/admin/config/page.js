@@ -5,6 +5,7 @@ import AddressImageInput from "@/components/address-image-input";
 import AdminShell from "@/components/admin-shell";
 import { adminFetch } from "@/lib/admin-client";
 import { defaultHomepageContent, sanitizeHomepageContent } from "@/lib/homepage-config";
+import { defaultSupportPages, sanitizeSupportPages } from "@/lib/support-pages-config";
 
 const initialState = {
   currency: "TWD",
@@ -15,6 +16,7 @@ const initialState = {
     tiktok: "",
   },
   homepage: sanitizeHomepageContent(defaultHomepageContent),
+  supportPages: sanitizeSupportPages(defaultSupportPages),
 };
 
 const sectionTypeOptions = [
@@ -55,6 +57,7 @@ export default function AdminConfigPage() {
             ...configData.settings?.social,
           },
           homepage: sanitizeHomepageContent(configData.settings?.homepage),
+          supportPages: sanitizeSupportPages(configData.settings?.supportPages),
         });
         setTags(Array.isArray(tagsData.tags) ? tagsData.tags : []);
         setVouchers(Array.isArray(vouchersData.vouchers) ? vouchersData.vouchers : []);
@@ -116,6 +119,15 @@ export default function AdminConfigPage() {
     }));
   }
 
+  function updateSupportPage(index, field, value) {
+    setForm((current) => ({
+      ...current,
+      supportPages: current.supportPages.map((page, pageIndex) =>
+        pageIndex === index ? { ...page, [field]: value } : page,
+      ),
+    }));
+  }
+
   async function handleHeroImageChange(event) {
     const file = event.target.files?.[0];
     if (!file) {
@@ -161,6 +173,7 @@ export default function AdminConfigPage() {
       const payload = {
         ...form,
         homepage: sanitizeHomepageContent(form.homepage),
+        supportPages: sanitizeSupportPages(form.supportPages),
       };
       const data = await adminFetch("/api/config", {
         method: "PUT",
@@ -170,6 +183,7 @@ export default function AdminConfigPage() {
         ...current,
         ...data.settings,
         homepage: sanitizeHomepageContent(data.settings?.homepage),
+        supportPages: sanitizeSupportPages(data.settings?.supportPages),
       }));
       setMessage("Đã lưu cấu hình homepage và campaign.");
     } catch (error) {
@@ -390,6 +404,25 @@ export default function AdminConfigPage() {
                 vouchers={vouchers}
                 onChange={(field, value) => updateCampaignField("campaignPopup", field, value)}
               />
+            </section>
+
+            <section className="luxury-card space-y-5 rounded-[32px] p-6">
+              <div>
+                <h3 className="text-xl font-bold text-stone-900">Trang hỗ trợ footer</h3>
+                <p className="mt-2 text-sm text-stone-500">
+                  Nội dung cho các trang mà khách bấm từ mục hỗ trợ ở footer.
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                {form.supportPages.map((page, index) => (
+                  <SupportPageEditor
+                    key={page.key}
+                    page={page}
+                    onChange={(field, value) => updateSupportPage(index, field, value)}
+                  />
+                ))}
+              </div>
             </section>
 
             {message ? (
@@ -651,6 +684,76 @@ function CampaignEditor({ campaign, tags, vouchers, onChange }) {
           onChange={(value) => onChange("ctaUrl", value)}
           placeholder="https://... hoặc /tag/sale"
         />
+      </div>
+    </div>
+  );
+}
+
+function SupportPageEditor({ page, onChange }) {
+  return (
+    <div className="rounded-[28px] border border-stone-200 bg-white p-5">
+      <div className="flex flex-col gap-2 border-b border-stone-100 pb-4">
+        <h4 className="text-lg font-bold text-stone-900">{page.labelVi}</h4>
+        <p className="text-sm text-stone-500">Slug: `/support/{page.slug}`</p>
+      </div>
+
+      <div className="mt-5 space-y-5">
+        <div className="grid gap-5 md:grid-cols-3">
+          <TextField label="Slug" value={page.slug} onChange={(value) => onChange("slug", value)} />
+          <TextField
+            label="Tên hiển thị tiếng Việt"
+            value={page.labelVi}
+            onChange={(value) => onChange("labelVi", value)}
+          />
+          <TextField
+            label="Tên hiển thị tiếng Hoa"
+            value={page.labelZh}
+            onChange={(value) => onChange("labelZh", value)}
+          />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <TextField
+            label="Tiêu đề trang tiếng Việt"
+            value={page.titleVi}
+            onChange={(value) => onChange("titleVi", value)}
+          />
+          <TextField
+            label="Tiêu đề trang tiếng Hoa"
+            value={page.titleZh}
+            onChange={(value) => onChange("titleZh", value)}
+          />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <TextareaField
+            label="Mô tả ngắn tiếng Việt"
+            value={page.summaryVi}
+            onChange={(value) => onChange("summaryVi", value)}
+            rows={3}
+          />
+          <TextareaField
+            label="Mô tả ngắn tiếng Hoa"
+            value={page.summaryZh}
+            onChange={(value) => onChange("summaryZh", value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <TextareaField
+            label="Nội dung tiếng Việt"
+            value={page.contentVi}
+            onChange={(value) => onChange("contentVi", value)}
+            rows={10}
+          />
+          <TextareaField
+            label="Nội dung tiếng Hoa"
+            value={page.contentZh}
+            onChange={(value) => onChange("contentZh", value)}
+            rows={10}
+          />
+        </div>
       </div>
     </div>
   );

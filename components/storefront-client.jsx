@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AddressImageInput from "@/components/address-image-input";
 import StorefrontHeader from "@/components/StorefrontHeader";
@@ -19,6 +20,7 @@ import {
   getLineTotal,
   getOrderPricing,
 } from "@/lib/pricing";
+import { sanitizeSupportPages } from "@/lib/support-pages-config";
 import { useTranslation } from "@/lib/use-translation";
 
 const CART_KEY = "maison-cart";
@@ -545,6 +547,15 @@ export default function StorefrontClient({
         language === "zh" ? "立即查看" : "Xem bộ sưu tập",
       )
     : "";
+  const supportPageLinks = useMemo(
+    () =>
+      sanitizeSupportPages(settings?.supportPages).map((page) => ({
+        key: page.key,
+        href: `/support/${page.slug}`,
+        label: getLocalizedHomepageText(language, page.labelVi, page.labelZh),
+      })),
+    [language, settings?.supportPages],
+  );
 
   useEffect(() => {
     if (!activePopupCampaign) {
@@ -1181,8 +1192,15 @@ export default function StorefrontClient({
                   {footerContent.supportTitle}
                 </h4>
                 <ul className="space-y-3 text-sm leading-7 text-stone-500/80">
-                  {footerContent.supportItems.map((item) => (
-                    <li key={item}>{item}</li>
+                  {supportPageLinks.map((item) => (
+                    <li key={item.key}>
+                      <Link
+                        href={item.href}
+                        className="transition hover:text-stone-900"
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
                   ))}
                 </ul>
               </div>

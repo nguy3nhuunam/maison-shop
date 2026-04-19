@@ -39,6 +39,7 @@ export async function PUT(request) {
         tiktok: payload.social?.tiktok || "",
       },
       homepage: payload.homepage,
+      supportPages: payload.supportPages,
     });
 
     return NextResponse.json({ settings });
