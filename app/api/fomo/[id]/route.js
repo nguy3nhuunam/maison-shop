@@ -10,11 +10,22 @@ function requireAdmin(request) {
   verifyAdminToken(token);
 }
 
+function parseFomoId(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 export async function PUT(request, { params }) {
   try {
     requireAdmin(request);
+    const resolvedParams = await Promise.resolve(params);
+    const itemId = parseFomoId(resolvedParams?.id);
+    if (!itemId) {
+      return NextResponse.json({ message: "Invalid FOMO item id." }, { status: 400 });
+    }
+
     const payload = await request.json();
-    const item = await updateFomoItem(params.id, payload);
+    const item = await updateFomoItem(itemId, payload);
 
     if (!item) {
       return NextResponse.json({ message: "FOMO item not found." }, { status: 404 });
@@ -36,8 +47,18 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     requireAdmin(request);
-    await deleteFomoItem(params.id);
-    return NextResponse.json({ ok: true });
+    const resolvedParams = await Promise.resolve(params);
+    const itemId = parseFomoId(resolvedParams?.id);
+    if (!itemId) {
+      return NextResponse.json({ message: "Invalid FOMO item id." }, { status: 400 });
+    }
+
+    const result = await deleteFomoItem(itemId);
+    if (!result.deletedCount) {
+      return NextResponse.json({ message: "FOMO item not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, id: itemId });
   } catch (error) {
     if (isAdminAuthError(error)) {
       return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
