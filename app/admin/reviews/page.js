@@ -18,20 +18,20 @@ function formatReviewTime(value) {
 function getStatusBadge(status) {
   if (status === "approved") {
     return {
-      label: "Da duyet",
+      label: "Đã duyệt",
       className: "bg-emerald-100 text-emerald-700",
     };
   }
 
   if (status === "rejected") {
     return {
-      label: "Da an",
+      label: "Đã ẩn",
       className: "bg-red-100 text-red-600",
     };
   }
 
   return {
-    label: "Cho duyet",
+    label: "Chờ duyệt",
     className: "bg-amber-100 text-amber-700",
   };
 }
@@ -48,7 +48,7 @@ export default function AdminReviewsPage() {
         const data = await adminFetch("/api/admin/reviews");
         setReviews(data.reviews || []);
       } catch (error) {
-        setMessage(error.message || "Khong the tai danh sach review.");
+        setMessage(error.message || "Không thể tải danh sách đánh giá.");
       } finally {
         setLoading(false);
       }
@@ -77,14 +77,14 @@ export default function AdminReviewsPage() {
       );
       setMessage(successMessage);
     } catch (error) {
-      setMessage(error.message || "Khong the cap nhat review.");
+      setMessage(error.message || "Không thể cập nhật đánh giá.");
     } finally {
       setWorkingId(null);
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm("Xoa review nay?")) {
+    if (!window.confirm("Xóa đánh giá này?")) {
       return;
     }
 
@@ -96,9 +96,9 @@ export default function AdminReviewsPage() {
         method: "DELETE",
       });
       setReviews((current) => current.filter((review) => review.id !== id));
-      setMessage("Da xoa review.");
+      setMessage("Đã xóa đánh giá.");
     } catch (error) {
-      setMessage(error.message || "Khong the xoa review.");
+      setMessage(error.message || "Không thể xóa đánh giá.");
     } finally {
       setWorkingId(null);
     }
@@ -106,20 +106,20 @@ export default function AdminReviewsPage() {
 
   return (
     <AdminShell
-      title="Reviews"
-      description="Duyet review moi, kiem tra verified buyer va quan ly hinh anh review cua tung san pham."
+      title="Đánh giá"
+      description="Duyệt đánh giá mới, kiểm tra người mua đã xác thực và quản lý hình ảnh đánh giá của từng sản phẩm."
     >
       <section className="grid gap-4 md:grid-cols-3">
         <div className="luxury-card rounded-[32px] p-6">
-          <p className="text-sm text-stone-500">Tong review</p>
+          <p className="text-sm text-stone-500">Tổng đánh giá</p>
           <p className="mt-3 text-4xl font-bold text-stone-900">{reviews.length}</p>
         </div>
         <div className="luxury-card rounded-[32px] p-6">
-          <p className="text-sm text-stone-500">Cho duyet</p>
+          <p className="text-sm text-stone-500">Chờ duyệt</p>
           <p className="mt-3 text-4xl font-bold text-amber-700">{pendingCount}</p>
         </div>
         <div className="luxury-card rounded-[32px] p-6">
-          <p className="text-sm text-stone-500">Verified buyer</p>
+          <p className="text-sm text-stone-500">Người mua đã xác thực</p>
           <p className="mt-3 text-4xl font-bold text-stone-900">
             {reviews.filter((review) => review.verifiedBuyer).length}
           </p>
@@ -127,7 +127,7 @@ export default function AdminReviewsPage() {
       </section>
 
       <section className="luxury-card rounded-[32px] p-6">
-        {loading ? <p className="text-sm text-stone-500">Dang tai review...</p> : null}
+        {loading ? <p className="text-sm text-stone-500">Đang tải đánh giá...</p> : null}
         {message ? <p className="mb-4 text-sm text-stone-600">{message}</p> : null}
 
         <div className="space-y-4">
@@ -152,7 +152,7 @@ export default function AdminReviewsPage() {
                         </span>
                         {review.verifiedBuyer ? (
                           <span className="rounded-full bg-stone-900 px-3 py-1 text-[11px] font-semibold text-white">
-                            Verified buyer
+                            Đã xác thực
                           </span>
                         ) : null}
                       </div>
@@ -188,12 +188,12 @@ export default function AdminReviewsPage() {
                         handleUpdate(
                           review.id,
                           { status: "approved" },
-                          "Da duyet review.",
+                          "Đã duyệt đánh giá.",
                         )
                       }
                       className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-medium text-emerald-700 disabled:opacity-60"
                     >
-                      Duyet
+                      Duyệt
                     </button>
                     <button
                       type="button"
@@ -202,12 +202,12 @@ export default function AdminReviewsPage() {
                         handleUpdate(
                           review.id,
                           { status: "rejected" },
-                          "Da an review.",
+                          "Đã ẩn đánh giá.",
                         )
                       }
                       className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-700 disabled:opacity-60"
                     >
-                      An review
+                      Ẩn đánh giá
                     </button>
                     <button
                       type="button"
@@ -217,13 +217,13 @@ export default function AdminReviewsPage() {
                           review.id,
                           { verifiedBuyer: !review.verifiedBuyer },
                           review.verifiedBuyer
-                            ? "Da bo danh dau verified buyer."
-                            : "Da danh dau verified buyer.",
+                            ? "Đã bỏ đánh dấu người mua đã xác thực."
+                            : "Đã đánh dấu người mua đã xác thực.",
                         )
                       }
                       className="rounded-full border border-stone-300 px-4 py-2 text-xs font-medium text-stone-700 disabled:opacity-60"
                     >
-                      {review.verifiedBuyer ? "Bo verified" : "Danh dau verified"}
+                      {review.verifiedBuyer ? "Bỏ xác thực" : "Đánh dấu xác thực"}
                     </button>
                     <button
                       type="button"
@@ -231,7 +231,7 @@ export default function AdminReviewsPage() {
                       onClick={() => handleDelete(review.id)}
                       className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-600 disabled:opacity-60"
                     >
-                      Xoa
+                      Xóa
                     </button>
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export default function AdminReviewsPage() {
           })}
 
           {!loading && reviews.length === 0 ? (
-            <p className="text-sm text-stone-500">Chua co review nao.</p>
+            <p className="text-sm text-stone-500">Chưa có đánh giá nào.</p>
           ) : null}
         </div>
       </section>

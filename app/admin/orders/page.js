@@ -68,7 +68,7 @@ export default function AdminOrdersPage() {
                   <th className="pb-4">{t("ordersTime")}</th>
                   <th className="pb-4">{t("ordersCustomer")}</th>
                   <th className="pb-4">{t("ordersItems")}</th>
-                  <th className="pb-4">Source</th>
+                  <th className="pb-4">Nguồn</th>
                   <th className="pb-4">{t("ordersTotal")}</th>
                   <th className="pb-4 text-right">{t("productAction")}</th>
                 </tr>

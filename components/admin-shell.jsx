@@ -16,7 +16,7 @@ export default function AdminShell({ title, titleKey, description, descriptionKe
     () => [
       { href: "/admin", label: t("adminDashboard") },
       { href: "/admin/products", label: t("adminProducts") },
-      { href: "/admin/reviews", label: "Reviews" },
+      { href: "/admin/reviews", label: "Đánh giá" },
       { href: "/admin/tags", label: t("adminTags") },
       { href: "/admin/vouchers", label: t("adminVouchers") },
       { href: "/admin/fomo", label: t("adminFomo") },

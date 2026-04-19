@@ -105,7 +105,7 @@ function aggregateSourceBreakdown(orders) {
   const currencyMap = new Map();
 
   for (const order of orders) {
-    const language = order.language === "zh" ? "ZH" : order.language === "vi" ? "VI" : "Unknown";
+    const language = order.language === "zh" ? "ZH" : order.language === "vi" ? "VI" : "Chưa rõ";
     const currency = order.currency || "TWD";
 
     languageMap.set(language, (languageMap.get(language) || 0) + 1);
@@ -161,7 +161,7 @@ export default function AdminDashboardPage() {
         setVouchers(vouchersData.vouchers || []);
         setReviews(reviewsData.reviews || []);
       } catch (loadError) {
-        setError(loadError.message || "Khong the tai dashboard.");
+        setError(loadError.message || "Không thể tải dashboard.");
       } finally {
         setLoading(false);
       }
@@ -207,10 +207,10 @@ export default function AdminDashboardPage() {
   return (
     <AdminShell
       title="Dashboard"
-      description="Tong hop nhanh doanh thu, san pham ban chay, voucher hieu qua, nguon don hang va canh bao van hanh."
+      description="Tổng hợp nhanh doanh thu, sản phẩm bán chạy, voucher hiệu quả, nguồn đơn hàng và cảnh báo vận hành."
     >
       {loading ? (
-        <div className="luxury-card rounded-[32px] p-6 text-sm text-stone-500">Dang tai dashboard...</div>
+        <div className="luxury-card rounded-[32px] p-6 text-sm text-stone-500">Đang tải dashboard...</div>
       ) : null}
 
       {error ? (
@@ -221,23 +221,23 @@ export default function AdminDashboardPage() {
         <>
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div className="luxury-card rounded-[32px] p-6">
-              <p className="text-sm text-stone-500">Tong doanh thu</p>
+              <p className="text-sm text-stone-500">Tổng doanh thu</p>
               <p className="mt-3 text-3xl font-bold text-stone-900">{formatMoney(totalRevenue)}</p>
             </div>
             <div className="luxury-card rounded-[32px] p-6">
-              <p className="text-sm text-stone-500">Doanh thu 7 ngay</p>
+              <p className="text-sm text-stone-500">Doanh thu 7 ngày</p>
               <p className="mt-3 text-3xl font-bold text-stone-900">{formatMoney(weekRevenue)}</p>
             </div>
             <div className="luxury-card rounded-[32px] p-6">
-              <p className="text-sm text-stone-500">Doanh thu hom nay</p>
+              <p className="text-sm text-stone-500">Doanh thu hôm nay</p>
               <p className="mt-3 text-3xl font-bold text-stone-900">{formatMoney(todayRevenue)}</p>
             </div>
             <div className="luxury-card rounded-[32px] p-6">
-              <p className="text-sm text-stone-500">Tong don hang</p>
+              <p className="text-sm text-stone-500">Tổng đơn hàng</p>
               <p className="mt-3 text-3xl font-bold text-stone-900">{orders.length}</p>
             </div>
             <div className="luxury-card rounded-[32px] p-6">
-              <p className="text-sm text-stone-500">Review cho duyet</p>
+              <p className="text-sm text-stone-500">Đánh giá chờ duyệt</p>
               <p className="mt-3 text-3xl font-bold text-amber-700">{pendingReviews}</p>
             </div>
           </section>
@@ -245,8 +245,8 @@ export default function AdminDashboardPage() {
           <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="luxury-card rounded-[32px] p-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-stone-900">Doanh thu theo ngay</h2>
-                <p className="text-sm text-stone-400">7 ngay gan nhat</p>
+                <h2 className="text-xl font-bold text-stone-900">Doanh thu theo ngày</h2>
+                <p className="text-sm text-stone-400">7 ngày gần nhất</p>
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-7">
@@ -263,7 +263,7 @@ export default function AdminDashboardPage() {
                         />
                       </div>
                       <p className="mt-3 text-xs uppercase tracking-[0.18em] text-stone-400">{day.label}</p>
-                      <p className="mt-2 text-sm font-semibold text-stone-900">{day.orders} don</p>
+                      <p className="mt-2 text-sm font-semibold text-stone-900">{day.orders} đơn</p>
                       <p className="mt-1 text-xs text-stone-500">{formatMoney(day.total)}</p>
                     </div>
                   );
@@ -273,10 +273,10 @@ export default function AdminDashboardPage() {
 
             <div className="space-y-6">
               <div className="luxury-card rounded-[32px] p-6">
-                <h2 className="text-xl font-bold text-stone-900">Nguon don hang</h2>
+                <h2 className="text-xl font-bold text-stone-900">Nguồn đơn hàng</h2>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-[24px] bg-white p-4">
-                    <p className="text-sm font-semibold text-stone-900">Theo ngon ngu</p>
+                    <p className="text-sm font-semibold text-stone-900">Theo ngôn ngữ</p>
                     <div className="mt-3 space-y-3">
                       {sourceBreakdown.languages.map((item) => (
                         <div key={item.label} className="flex items-center justify-between text-sm">
@@ -285,13 +285,13 @@ export default function AdminDashboardPage() {
                         </div>
                       ))}
                       {sourceBreakdown.languages.length === 0 ? (
-                        <p className="text-sm text-stone-400">Chua co du lieu.</p>
+                        <p className="text-sm text-stone-400">Chưa có dữ liệu.</p>
                       ) : null}
                     </div>
                   </div>
 
                   <div className="rounded-[24px] bg-white p-4">
-                    <p className="text-sm font-semibold text-stone-900">Theo tien te</p>
+                    <p className="text-sm font-semibold text-stone-900">Theo tiền tệ</p>
                     <div className="mt-3 space-y-3">
                       {sourceBreakdown.currencies.map((item) => (
                         <div key={item.label} className="flex items-center justify-between text-sm">
@@ -300,7 +300,7 @@ export default function AdminDashboardPage() {
                         </div>
                       ))}
                       {sourceBreakdown.currencies.length === 0 ? (
-                        <p className="text-sm text-stone-400">Chua co du lieu.</p>
+                        <p className="text-sm text-stone-400">Chưa có dữ liệu.</p>
                       ) : null}
                     </div>
                   </div>
@@ -308,22 +308,22 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="luxury-card rounded-[32px] p-6">
-                <h2 className="text-xl font-bold text-stone-900">He thong</h2>
+                <h2 className="text-xl font-bold text-stone-900">Hệ thống</h2>
                 <div className="mt-5 space-y-3 text-sm">
                   <div className="rounded-[24px] bg-white p-4">
                     <p className="font-semibold text-stone-900">MongoDB</p>
                     <p className="mt-1 text-stone-500">
-                      {settings?.mongodbConfigured ? "Da cau hinh" : "Chua cau hinh"}
+                      {settings?.mongodbConfigured ? "Đã cấu hình" : "Chưa cấu hình"}
                     </p>
                   </div>
                   <div className="rounded-[24px] bg-white p-4">
                     <p className="font-semibold text-stone-900">Cloudinary</p>
                     <p className="mt-1 text-stone-500">
-                      {settings?.cloudinaryConfigured ? "Da cau hinh" : "Chua cau hinh"}
+                      {settings?.cloudinaryConfigured ? "Đã cấu hình" : "Chưa cấu hình"}
                     </p>
                   </div>
                   <div className="rounded-[24px] bg-white p-4">
-                    <p className="font-semibold text-stone-900">Tong voucher</p>
+                    <p className="font-semibold text-stone-900">Tổng voucher</p>
                     <p className="mt-1 text-stone-500">{vouchers.length}</p>
                   </div>
                 </div>
@@ -333,43 +333,43 @@ export default function AdminDashboardPage() {
 
           <section className="grid gap-6 xl:grid-cols-2">
             <div className="luxury-card rounded-[32px] p-6">
-              <h2 className="text-xl font-bold text-stone-900">San pham ban chay</h2>
+              <h2 className="text-xl font-bold text-stone-900">Sản phẩm bán chạy</h2>
               <div className="mt-5 space-y-3">
                 {topProducts.map((product) => (
                   <div key={product.productId} className="flex items-center gap-4 rounded-[24px] bg-white p-4">
                     <img src={product.image} alt={product.name} className="h-20 w-16 rounded-2xl object-cover" />
                     <div className="flex-1">
                       <p className="font-semibold text-stone-900">{product.name}</p>
-                      <p className="mt-1 text-sm text-stone-500">Da ban: {product.quantity}</p>
+                      <p className="mt-1 text-sm text-stone-500">Đã bán: {product.quantity}</p>
                       <p className="mt-1 text-sm text-stone-500">Doanh thu: {formatMoney(product.revenue)}</p>
                     </div>
                   </div>
                 ))}
                 {topProducts.length === 0 ? (
-                  <p className="text-sm text-stone-500">Chua co du lieu ban hang.</p>
+                  <p className="text-sm text-stone-500">Chưa có dữ liệu bán hàng.</p>
                 ) : null}
               </div>
             </div>
 
             <div className="luxury-card rounded-[32px] p-6">
-              <h2 className="text-xl font-bold text-stone-900">Voucher hieu qua</h2>
+              <h2 className="text-xl font-bold text-stone-900">Voucher hiệu quả</h2>
               <div className="mt-5 space-y-3">
                 {voucherPerformance.map((voucher) => (
                   <div key={voucher.code} className="rounded-[24px] bg-white p-4">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-semibold text-stone-900">{voucher.code}</p>
                       <span className="rounded-full bg-stone-900 px-3 py-1 text-xs font-semibold text-white">
-                        {voucher.orders} don
+                        {voucher.orders} đơn
                       </span>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-stone-500 sm:grid-cols-2">
-                      <p>Giam da dung: {formatMoney(voucher.totalDiscount)}</p>
-                      <p>Doanh thu tac dong: {formatMoney(voucher.revenue)}</p>
+                      <p>Giảm đã dùng: {formatMoney(voucher.totalDiscount)}</p>
+                      <p>Doanh thu tác động: {formatMoney(voucher.revenue)}</p>
                     </div>
                   </div>
                 ))}
                 {voucherPerformance.length === 0 ? (
-                  <p className="text-sm text-stone-500">Chua co voucher nao duoc su dung.</p>
+                  <p className="text-sm text-stone-500">Chưa có voucher nào được sử dụng.</p>
                 ) : null}
               </div>
             </div>
@@ -377,8 +377,8 @@ export default function AdminDashboardPage() {
 
           <section className="luxury-card rounded-[32px] p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-stone-900">Canh bao ton kho thap</h2>
-              <p className="text-sm text-stone-400">Nguong canh bao: 3 san pham</p>
+              <h2 className="text-xl font-bold text-stone-900">Cảnh báo tồn kho thấp</h2>
+              <p className="text-sm text-stone-400">Ngưỡng cảnh báo: 3 sản phẩm</p>
             </div>
 
             <div className="mt-5 grid gap-3 lg:grid-cols-2">
@@ -396,7 +396,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs uppercase tracking-[0.18em] text-stone-400">Stock</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-stone-400">Tồn kho</p>
                     <p className={`mt-1 text-2xl font-bold ${item.stock === 0 ? "text-red-600" : "text-amber-700"}`}>
                       {item.stock}
                     </p>
@@ -404,7 +404,7 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
               {lowStockProducts.length === 0 ? (
-                <p className="text-sm text-stone-500">Khong co bien the nao canh bao ton kho.</p>
+                <p className="text-sm text-stone-500">Không có biến thể nào đang cảnh báo tồn kho.</p>
               ) : null}
             </div>
           </section>
