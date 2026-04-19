@@ -119,13 +119,13 @@ export default function AdminFomoPage() {
             />
           </label>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2 md:items-end">
             <label className="space-y-2 text-sm text-stone-600">
               <span>{t("fomoFieldType")}</span>
               <select
                 value={form.type}
                 onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
-                className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                className="min-h-14 w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
               >
                 <option value="sales">{t("fomoTypeSales")}</option>
                 <option value="stock">{t("fomoTypeStock")}</option>
@@ -133,16 +133,21 @@ export default function AdminFomoPage() {
               </select>
             </label>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, isActive: event.target.checked }))
-                }
-              />
-              {t("fomoFieldActive")}
-            </label>
+            <div className="space-y-2 text-sm text-stone-600">
+              <span aria-hidden="true" className="block select-none text-transparent">
+                {t("fomoFieldType")}
+              </span>
+              <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, isActive: event.target.checked }))
+                  }
+                />
+                {t("fomoFieldActive")}
+              </label>
+            </div>
           </div>
 
           {message ? <p className="text-sm text-stone-600">{message}</p> : null}
