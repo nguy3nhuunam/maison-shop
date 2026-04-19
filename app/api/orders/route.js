@@ -3,7 +3,6 @@ import { getBearerToken, isAdminAuthError, verifyAdminToken } from "@/lib/auth";
 import {
   createOrder,
   getAllOrders,
-  getSettings,
   incrementVoucherUsage,
   reserveOrderItems,
   restoreReservedStock,
@@ -69,8 +68,6 @@ export async function POST(request) {
     }
 
     const pricing = getOrderPricing(reservedItems, voucher?.discountPercent || 0);
-    const settings = await getSettings();
-
     let addressImageValue = customer.addressImage;
     if (addressImageValue?.startsWith("data:image/")) {
       try {
@@ -95,7 +92,7 @@ export async function POST(request) {
         addressImage: addressImageValue,
         items: reservedItems,
         total: pricing.total,
-        currency: settings.currency,
+        currency: "TWD",
         voucherCode: voucher?.code || "",
         voucherDiscount: pricing.voucherDiscount,
       });

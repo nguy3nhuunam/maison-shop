@@ -98,7 +98,7 @@
   "freeShipToggle": "啟用免運",
   "discountBadge": "折扣 {{percent}}%",
   "freeShipBadge": "免運費",
-  "promotionSavings": "節省 {{amount}} TWD",
+  "promotionSavings": "節省 {{amount}}",
   "originalPrice": "原價",
   "discountedPrice": "折後價",
   "checkoutSavings": "節省",

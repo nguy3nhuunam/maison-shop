@@ -1,21 +1,20 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AddressImageInput from "@/components/address-image-input";
+import StorefrontHeader from "@/components/StorefrontHeader";
 import ProductList from "@/components/product-list";
 import ProductDetailSheet from "@/components/product-detail-sheet";
 import TagList from "@/components/tag-list";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatCurrency } from "@/lib/currency";
 import {
   getDiscountedUnitPrice,
   getLineTotal,
   getOrderPricing,
 } from "@/lib/pricing";
-import { getTranslation, setStoredLanguage } from "@/lib/translations";
+import { useTranslation } from "@/lib/use-translation";
 
-const LANGUAGE_KEY = "maison-language";
 const CART_KEY = "maison-cart";
 const CUSTOMER_KEY = "maison-customer";
 const VIEWED_KEY = "maison-viewed-products";
@@ -197,21 +196,6 @@ function mergeCartItem(cart, nextItem) {
   };
 }
 
-function CartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current">
-      <path
-        d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H7"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="10" cy="19" r="1.2" />
-      <circle cx="17" cy="19" r="1.2" />
-    </svg>
-  );
-}
-
 function FacebookIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className="h-[18px] w-[18px]" aria-hidden="true">
@@ -256,8 +240,9 @@ export default function StorefrontClient({
   tags = [],
   activeTagSlug = "all",
 }) {
+  const { language, t } = useTranslation();
+  const { currency } = useCurrency();
   const [catalog, setCatalog] = useState(products);
-  const [language, setLanguage] = useState("vi");
   const [heroSlogan, setHeroSlogan] = useState("");
   const [heroSubtext, setHeroSubtext] = useState("");
   const [heroReady, setHeroReady] = useState(false);
@@ -283,16 +268,10 @@ export default function StorefrontClient({
   }, [products]);
 
   useEffect(() => {
-    const savedLanguage = window.localStorage.getItem(LANGUAGE_KEY);
     const savedCart = window.localStorage.getItem(CART_KEY);
     const savedCustomer = window.localStorage.getItem(CUSTOMER_KEY);
     const savedViewed = window.localStorage.getItem(VIEWED_KEY);
     const savedVoucher = window.localStorage.getItem(VOUCHER_KEY);
-    const initialLanguage = savedLanguage === "zh" ? "zh" : "vi";
-
-    if (savedLanguage === "zh") {
-      setLanguage("zh");
-    }
 
     try {
       const savedTitleKey = window.sessionStorage.getItem(HERO_SLOGAN_KEY);
@@ -364,10 +343,6 @@ export default function StorefrontClient({
   }, []);
 
   useEffect(() => {
-    setStoredLanguage(language);
-  }, [language]);
-
-  useEffect(() => {
     try {
       const savedTitleKey = window.sessionStorage.getItem(HERO_SLOGAN_KEY);
       setHeroSlogan(HERO_TITLE_KEYS.includes(savedTitleKey) ? savedTitleKey : HERO_TITLE_KEYS[0]);
@@ -411,8 +386,6 @@ export default function StorefrontClient({
     window.localStorage.setItem(VOUCHER_KEY, JSON.stringify(voucher));
   }, [voucher]);
 
-  const t = getTranslation(language);
-  const currency = settings?.currency || "TWD";
   const activeHeroTitle =
     t(heroSlogan || HERO_TITLE_KEYS[0]) || HERO_TITLES.vi[0] || HERO_SLOGANS[0];
   const activeHeroSubtext =
@@ -807,83 +780,15 @@ export default function StorefrontClient({
     }
   }
 
-  const languageOptions = [
-    { key: "vi", label: "VIE", flag: "🇻🇳" },
-    { key: "zh", label: "中文", flag: "🇹🇼" },
-  ];
-
   return (
     <div className="min-h-screen pb-16 text-stone-900">
-      <header className="sticky top-0 z-30 border-b border-[#ddd4ca] bg-[#eae3da]/95 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:py-4 lg:px-8">
-          <Link href="/" className="group flex min-w-0 items-center gap-2 rounded-2xl px-1 py-1 sm:gap-3.5">
-            <div className="flex shrink-0 items-center justify-center rounded-xl border border-[#e5ded5] bg-white/75 p-1.5 shadow-[0_8px_24px_rgba(120,95,60,0.06)] transition-colors group-hover:border-[#d8c8b6] sm:p-1.5">
-              {logoVisible ? (
-                <Image
-                  src={BRAND_LOGO_SRC}
-                  alt="MAISON"
-                  width={72}
-                  height={72}
-                  priority
-                  onError={() => setLogoVisible(false)}
-                  className="h-auto w-[46px] shrink-0 rounded-[10px] object-contain transition-opacity group-hover:opacity-85 sm:w-[54px] lg:w-[68px]"
-                />
-              ) : (
-                <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] bg-white text-sm font-bold tracking-[0.2em] text-stone-900 sm:h-[54px] sm:w-[54px] lg:h-[68px] lg:w-[68px]">
-                  M
-                </div>
-              )}
-            </div>
-
-            <div className="min-w-0">
-              <p className="truncate text-[9px] uppercase tracking-[0.28em] text-stone-500 sm:text-[11px] sm:tracking-[0.38em]">
-                MAISONSHOP.STORE
-              </p>
-              <h1 className="mt-1 truncate text-[0.9rem] font-extrabold tracking-[0.2em] text-stone-900 sm:text-2xl sm:tracking-[0.28em]">
-                {t.logo}
-              </h1>
-            </div>
-          </Link>
-
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="flex items-center rounded-full border border-stone-200 bg-white/90 p-0.5 shadow-sm sm:p-1">
-              {languageOptions.map((option) => {
-                const active = language === option.key;
-
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => setLanguage(option.key)}
-                    className={`rounded-full px-2 py-1.5 text-xs transition sm:px-3 sm:py-2 sm:text-sm ${
-                      active
-                        ? "bg-stone-900 font-semibold text-white"
-                        : "text-stone-700 hover:bg-[#f6efe2] hover:text-[#b38a45]"
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 sm:gap-2">
-                      <span>{option.label}</span>
-                      <span aria-hidden="true">{option.flag}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setCartOpen(true)}
-              className="relative rounded-full bg-stone-900 p-3 text-white transition hover:bg-[#b38a45]"
-              aria-label={t.viewCart}
-            >
-              <CartIcon />
-              <span className="absolute -right-1 -top-1 rounded-full bg-[#b38a45] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                {cartCount}
-              </span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <StorefrontHeader
+        brandLogoSrc={BRAND_LOGO_SRC}
+        logoVisible={logoVisible}
+        onLogoError={() => setLogoVisible(false)}
+        cartCount={cartCount}
+        onCartOpen={() => setCartOpen(true)}
+      />
 
       <main className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
         <section className="luxury-card overflow-hidden rounded-[32px] px-4 py-5 sm:px-5 lg:px-7 lg:py-6">
@@ -954,9 +859,6 @@ export default function StorefrontClient({
 
         <ProductList
           products={filteredProducts}
-          currency={currency}
-          language={language}
-          t={t}
           onProductSelect={openProductDetails}
           emptyMessage={
             activeTag
