@@ -618,8 +618,8 @@ export default function ProductDetailSheet({
                         <p className="text-sm font-semibold text-stone-900">{reviewCopy.title}</p>
                         <p className="mt-2 text-sm leading-6 text-stone-500">{reviewCopy.note}</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="rounded-full bg-[#f6efe2] px-3 py-1 text-[11px] font-semibold text-[#b38a45]">
+                      <div className="flex items-stretch gap-3">
+                        <span className="inline-flex min-h-[52px] min-w-[84px] items-center justify-center rounded-full bg-[#f6efe2] px-4 py-3 text-center text-[12px] font-semibold leading-4 text-[#b38a45]">
                           {reviewCountLabel}
                         </span>
                         <button
@@ -628,7 +628,7 @@ export default function ProductDetailSheet({
                             setReviewMessage("");
                             setReviewModalOpen(true);
                           }}
-                          className="rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#b38a45]"
+                          className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-stone-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#b38a45]"
                         >
                           {reviewCopy.open}
                         </button>
