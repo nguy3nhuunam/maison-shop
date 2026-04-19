@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import CurrencySwitcher from "@/components/CurrencySwitcher";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CurrencyDropdown from "@/components/CurrencyDropdown";
+import LanguageDropdown from "@/components/LanguageDropdown";
 import { useTranslation } from "@/lib/use-translation";
 
 function CartIcon() {
@@ -52,7 +52,7 @@ export default function StorefrontHeader({
             )}
           </div>
 
-          <div className="min-w-0">
+          <div className="hidden min-w-0 sm:block">
             <p className="truncate text-[9px] uppercase tracking-[0.28em] text-stone-500 sm:text-[11px] sm:tracking-[0.38em]">
               MAISONSHOP.STORE
             </p>
@@ -62,13 +62,13 @@ export default function StorefrontHeader({
           </div>
         </Link>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <LanguageSwitcher />
-          <CurrencySwitcher />
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <LanguageDropdown />
+          <CurrencyDropdown />
           <button
             type="button"
             onClick={onCartOpen}
-            className="relative rounded-full bg-stone-900 p-3 text-white transition hover:bg-[#b38a45]"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-900 text-white transition hover:bg-[#b38a45]"
             aria-label={t.viewCart}
           >
             <CartIcon />
