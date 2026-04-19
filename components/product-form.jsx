@@ -462,7 +462,7 @@ export default function ProductForm({ product }) {
         />
       </label>
 
-      <section className="rounded-[28px] border border-stone-200 bg-white p-5">
+      <section className="mt-2 rounded-[28px] border border-stone-200 bg-white p-5 md:mt-3">
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-stone-900">{t("productTagsTitle")}</h2>
           <p className="text-sm text-stone-500">{t("productTagsDescription")}</p>
