@@ -14,17 +14,35 @@ function requireAdmin(request) {
   verifyAdminToken(token);
 }
 
+async function resolveProductId(params) {
+  const resolvedParams = await params;
+  const rawId = resolvedParams?.id;
+  const productId = Number.parseInt(rawId, 10);
+
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return null;
+  }
+
+  return productId;
+}
+
 export async function PUT(request, { params }) {
   try {
     requireAdmin(request);
-    const existing = await getProductById(params.id);
+    const productId = await resolveProductId(params);
+
+    if (!productId) {
+      return NextResponse.json({ message: "Product not found." }, { status: 404 });
+    }
+
+    const existing = await getProductById(productId);
 
     if (!existing) {
       return NextResponse.json({ message: "Product not found." }, { status: 404 });
     }
 
     const payload = await request.json();
-    const product = await updateProduct(params.id, payload);
+    const product = await updateProduct(productId, payload);
 
     return NextResponse.json({ product });
   } catch (error) {
@@ -42,7 +60,13 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     requireAdmin(request);
-    await deleteProduct(params.id);
+    const productId = await resolveProductId(params);
+
+    if (!productId) {
+      return NextResponse.json({ message: "Product not found." }, { status: 404 });
+    }
+
+    await deleteProduct(productId);
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (isAdminAuthError(error)) {
