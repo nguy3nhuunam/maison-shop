@@ -9,6 +9,7 @@ const presetSizes = ["S", "M", "L", "XL"];
 
 let nextVariantKey = 0;
 let nextColorBlockKey = 0;
+let nextSizeEntryKey = 0;
 
 function normalizeImages(images) {
   const source = Array.isArray(images) ? images : [images];
@@ -19,12 +20,19 @@ function normalizeColorKey(color) {
   return String(color || "").trim().toLowerCase();
 }
 
-function createEmptyVariant() {
+function createVariantRecord({ size = "", color = "", stock = 0 } = {}) {
   return {
     clientKey: `variant-${nextVariantKey++}`,
+    size,
+    color,
+    stock,
+  };
+}
+
+function createEmptySizeEntry() {
+  return {
+    clientKey: `size-${nextSizeEntryKey++}`,
     size: "",
-    color: "",
-    stock: 0,
   };
 }
 
@@ -63,6 +71,36 @@ function buildColorBlocks(product) {
   return blocks.length > 0 ? blocks : [createEmptyColorBlock()];
 }
 
+function buildSizeEntries(product) {
+  if (!product?.variants?.length) {
+    return [createEmptySizeEntry()];
+  }
+
+  const entries = [];
+  const seen = new Set();
+
+  for (const variant of product.variants) {
+    const size = String(variant.size || "").trim();
+    const sizeKey = size.toLowerCase();
+
+    if (!size || seen.has(sizeKey)) {
+      continue;
+    }
+
+    seen.add(sizeKey);
+    entries.push({
+      clientKey: `size-${nextSizeEntryKey++}`,
+      size,
+    });
+  }
+
+  return entries.length > 0 ? entries : [createEmptySizeEntry()];
+}
+
+function getVariantLookupKey(size, color) {
+  return `${String(size || "").trim().toLowerCase()}::${normalizeColorKey(color)}`;
+}
+
 async function uploadAdminFile(file) {
   const uploadData = new FormData();
   uploadData.append("file", file);
@@ -97,7 +135,8 @@ export default function ProductForm({ product }) {
       status: "active",
       description: "",
       primaryImage: "",
-      variants: [createEmptyVariant()],
+      variants: [],
+      sizeEntries: [createEmptySizeEntry()],
       colorBlocks: [createEmptyColorBlock()],
     }),
     [],
@@ -122,7 +161,8 @@ export default function ProductForm({ product }) {
               size: variant.size,
               color: variant.color,
               stock: Number(variant.stock || 0),
-            })) || [createEmptyVariant()],
+            })) || [],
+          sizeEntries: buildSizeEntries(product),
           colorBlocks: buildColorBlocks(product),
         }
       : initialState,
@@ -162,6 +202,39 @@ export default function ProductForm({ product }) {
     loadTags();
   }, [t]);
 
+  const filledSizeEntries = useMemo(
+    () => form.sizeEntries.filter((entry) => String(entry.size || "").trim()),
+    [form.sizeEntries],
+  );
+  const filledColorBlocks = useMemo(
+    () => form.colorBlocks.filter((block) => String(block.color || "").trim()),
+    [form.colorBlocks],
+  );
+  const variantMatrixCopy =
+    t.language === "zh"
+      ? {
+          sizeHelper: "先建立尺寸，再在矩陣內填寫對應庫存。",
+          colorHelper: "顏色欄位與圖片沿用上方色卡設定。",
+          stockHelper: "留空表示該尺寸/顏色組合不存在。",
+          addSize: "新增尺寸",
+          matrixTitle: "尺寸 x 顏色庫存矩陣",
+          matrixHint: "直接在格子中填庫存，空白代表不建立該變體。",
+          fillZero: "全部填 0",
+          clearAll: "全部清空",
+          emptyMatrix: "請至少建立一個尺寸與一個顏色，系統才會顯示矩陣。",
+        }
+      : {
+          sizeHelper: "Tạo danh sách size trước, sau đó nhập tồn kho ngay trong ma trận.",
+          colorHelper: "Màu và ảnh màu đang dùng chung với phần màu sản phẩm ở trên.",
+          stockHelper: "Để trống nếu tổ hợp size/màu đó không bán.",
+          addSize: "Thêm size",
+          matrixTitle: "Ma trận tồn kho size x màu",
+          matrixHint: "Nhập số tồn kho trực tiếp vào ô. Để trống nếu không tạo biến thể đó.",
+          fillZero: "Điền tất cả = 0",
+          clearAll: "Xóa toàn bộ",
+          emptyMatrix: "Cần ít nhất 1 size và 1 màu thì ma trận mới hiển thị.",
+        };
+
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
@@ -179,30 +252,92 @@ export default function ProductForm({ product }) {
     });
   }
 
-  function updateVariant(index, field, value) {
+  function updateSizeEntry(index, value) {
+    setForm((current) => {
+      const previousSize = String(current.sizeEntries[index]?.size || "").trim();
+      const nextSize = String(value || "");
+
+      return {
+        ...current,
+        sizeEntries: current.sizeEntries.map((entry, entryIndex) =>
+          entryIndex === index ? { ...entry, size: nextSize } : entry,
+        ),
+        variants: current.variants.map((variant) =>
+          previousSize && String(variant.size || "").trim() === previousSize
+            ? { ...variant, size: nextSize }
+            : variant,
+        ),
+      };
+    });
+  }
+
+  function addSizeEntry(preset = "") {
     setForm((current) => ({
       ...current,
-      variants: current.variants.map((variant, variantIndex) =>
-        variantIndex === index ? { ...variant, [field]: value } : variant,
-      ),
+      sizeEntries: [...current.sizeEntries, { ...createEmptySizeEntry(), size: preset }],
     }));
   }
 
-  function addVariantRow(preset = {}) {
-    setForm((current) => ({
-      ...current,
-      variants: [...current.variants, { ...createEmptyVariant(), ...preset }],
-    }));
+  function removeSizeEntry(index) {
+    setForm((current) => {
+      const removedSize = String(current.sizeEntries[index]?.size || "").trim();
+      const nextSizeEntries =
+        current.sizeEntries.length === 1
+          ? [createEmptySizeEntry()]
+          : current.sizeEntries.filter((_, entryIndex) => entryIndex !== index);
+
+      return {
+        ...current,
+        sizeEntries: nextSizeEntries,
+        variants: removedSize
+          ? current.variants.filter((variant) => String(variant.size || "").trim() !== removedSize)
+          : current.variants,
+      };
+    });
   }
 
-  function removeVariantRow(index) {
-    setForm((current) => ({
-      ...current,
-      variants:
-        current.variants.length === 1
-          ? [createEmptyVariant()]
-          : current.variants.filter((_, variantIndex) => variantIndex !== index),
-    }));
+  function updateVariantStock(size, color, value) {
+    const normalizedSize = String(size || "").trim();
+    const normalizedColor = String(color || "").trim();
+
+    if (!normalizedSize || !normalizedColor) {
+      return;
+    }
+
+    setForm((current) => {
+      const variantIndex = current.variants.findIndex(
+        (variant) => getVariantLookupKey(variant.size, variant.color) === getVariantLookupKey(normalizedSize, normalizedColor),
+      );
+
+      if (value === "") {
+        return {
+          ...current,
+          variants:
+            variantIndex === -1
+              ? current.variants
+              : current.variants.filter((_, currentIndex) => currentIndex !== variantIndex),
+        };
+      }
+
+      const nextStock = Math.max(0, Number.parseInt(value, 10) || 0);
+
+      if (variantIndex === -1) {
+        return {
+          ...current,
+          variants: [
+            ...current.variants,
+            createVariantRecord({ size: normalizedSize, color: normalizedColor, stock: nextStock }),
+          ],
+        };
+      }
+
+      return {
+        ...current,
+        variants: current.variants.map((variant, currentIndex) =>
+          currentIndex === variantIndex ? { ...variant, stock: nextStock } : variant,
+        ),
+      };
+    });
   }
 
   function updateColorBlock(index, field, value) {
@@ -241,13 +376,20 @@ export default function ProductForm({ product }) {
   }
 
   function removeColorBlock(index) {
-    setForm((current) => ({
-      ...current,
-      colorBlocks:
-        current.colorBlocks.length === 1
-          ? [createEmptyColorBlock()]
-          : current.colorBlocks.filter((_, blockIndex) => blockIndex !== index),
-    }));
+    setForm((current) => {
+      const removedColor = String(current.colorBlocks[index]?.color || "").trim();
+
+      return {
+        ...current,
+        colorBlocks:
+          current.colorBlocks.length === 1
+            ? [createEmptyColorBlock()]
+            : current.colorBlocks.filter((_, blockIndex) => blockIndex !== index),
+        variants: removedColor
+          ? current.variants.filter((variant) => String(variant.color || "").trim() !== removedColor)
+          : current.variants,
+      };
+    });
   }
 
   function removeColorImage(colorIndex, imageIndex) {
@@ -262,6 +404,42 @@ export default function ProductForm({ product }) {
           : block,
       ),
     }));
+  }
+
+  function getVariantStockValue(size, color) {
+    const matchedVariant = form.variants.find(
+      (variant) => getVariantLookupKey(variant.size, variant.color) === getVariantLookupKey(size, color),
+    );
+
+    return matchedVariant ? String(matchedVariant.stock ?? "") : "";
+  }
+
+  function bulkSetMatrixStock(mode) {
+    setForm((current) => {
+      if (mode === "clear") {
+        return { ...current, variants: [] };
+      }
+
+      const nextVariants = [];
+
+      for (const colorBlock of current.colorBlocks) {
+        const color = String(colorBlock.color || "").trim();
+        if (!color) {
+          continue;
+        }
+
+        for (const sizeEntry of current.sizeEntries) {
+          const size = String(sizeEntry.size || "").trim();
+          if (!size) {
+            continue;
+          }
+
+          nextVariants.push(createVariantRecord({ size, color, stock: 0 }));
+        }
+      }
+
+      return { ...current, variants: nextVariants };
+    });
   }
 
   async function handleColorUpload(index, fileList) {
@@ -318,6 +496,10 @@ export default function ProductForm({ product }) {
         }))
         .filter((block) => block.color || block.images.length > 0);
 
+      if (cleanedColorBlocks.length === 0) {
+        throw new Error(t("productColorNameRequired"));
+      }
+
       const seenColorKeys = new Set();
       for (const block of cleanedColorBlocks) {
         const colorKey = normalizeColorKey(block.color);
@@ -328,6 +510,27 @@ export default function ProductForm({ product }) {
           throw new Error(t("productColorDuplicate"));
         }
         seenColorKeys.add(colorKey);
+      }
+
+      const cleanedSizes = form.sizeEntries
+        .map((entry) => String(entry.size || "").trim())
+        .filter(Boolean);
+
+      if (cleanedSizes.length === 0) {
+        throw new Error(
+          t.language === "zh" ? "請至少建立一個尺寸。" : "Vui lòng tạo ít nhất một size.",
+        );
+      }
+
+      const seenSizeKeys = new Set();
+      for (const size of cleanedSizes) {
+        const sizeKey = size.toLowerCase();
+        if (seenSizeKeys.has(sizeKey)) {
+          throw new Error(
+            t.language === "zh" ? "尺寸名稱不可重複。" : "Size đang bị trùng nhau.",
+          );
+        }
+        seenSizeKeys.add(sizeKey);
       }
 
       const cleanedVariants = form.variants.map((variant) => ({
@@ -713,7 +916,8 @@ export default function ProductForm({ product }) {
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-stone-900">{t("productVariants")}</h2>
-            <p className="mt-1 text-sm text-stone-500">{t("productVariantsDescription")}</p>
+            <p className="mt-1 text-sm text-stone-500">{variantMatrixCopy.sizeHelper}</p>
+            <p className="mt-1 text-sm text-stone-400">{variantMatrixCopy.stockHelper}</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -721,86 +925,128 @@ export default function ProductForm({ product }) {
               <button
                 key={size}
                 type="button"
-                onClick={() => addVariantRow({ size, color: "", stock: 0 })}
+                onClick={() => addSizeEntry(size)}
                 className="rounded-full border border-stone-300 px-3 py-2 text-xs font-medium text-stone-600"
               >
                 + {size}
               </button>
             ))}
-            {presetColors.map((color) => (
-              <button
-                key={color.value}
-                type="button"
-                onClick={() => addVariantRow({ size: "", color: color.value, stock: 0 })}
-                className="rounded-full border border-stone-300 px-3 py-2 text-xs font-medium text-stone-600"
-              >
-                + {color.label}
-              </button>
-            ))}
             <button
               type="button"
-              onClick={() => addVariantRow()}
+              onClick={() => addSizeEntry()}
               className="rounded-full bg-stone-900 px-4 py-2 text-xs font-semibold text-white"
             >
-              {t("productAddRow")}
+              {variantMatrixCopy.addSize}
             </button>
           </div>
         </div>
 
-        <div className="mt-5 space-y-3">
-          <div className="hidden grid-cols-[1fr_1fr_120px_80px] gap-3 px-2 text-xs uppercase tracking-[0.2em] text-stone-400 md:grid">
-            <span>{t("productVariantSize")}</span>
-            <span>{t("productVariantColor")}</span>
-            <span>{t("productVariantStock")}</span>
-            <span className="text-right">{t("productAction")}</span>
+        <div className="mt-5 rounded-[28px] border border-stone-200 bg-[#fcfaf6] p-4">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+            <div>
+              <p className="text-sm font-medium text-stone-800">{t("productVariantSize")}</p>
+              <p className="mt-1 text-xs leading-6 text-stone-400">{variantMatrixCopy.colorHelper}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => bulkSetMatrixStock("zero")}
+                className="rounded-full border border-stone-300 px-3 py-2 text-xs font-medium text-stone-600"
+              >
+                {variantMatrixCopy.fillZero}
+              </button>
+              <button
+                type="button"
+                onClick={() => bulkSetMatrixStock("clear")}
+                className="rounded-full border border-red-200 px-3 py-2 text-xs font-medium text-red-500"
+              >
+                {variantMatrixCopy.clearAll}
+              </button>
+            </div>
           </div>
 
-          {form.variants.map((variant, index) => (
-            <div
-              key={variant.clientKey}
-              className="grid gap-3 rounded-3xl border border-stone-200 bg-[#fcfaf6] p-4 md:grid-cols-[1fr_1fr_120px_80px]"
-            >
-              <label className="space-y-2 text-sm text-stone-600">
-                <span className="md:hidden">{t("productVariantSize")}</span>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {form.sizeEntries.map((entry, index) => (
+              <div
+                key={entry.clientKey}
+                className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-2"
+              >
                 <input
-                  value={variant.size}
-                  onChange={(event) => updateVariant(index, "size", event.target.value)}
-                  className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                  value={entry.size}
+                  onChange={(event) => updateSizeEntry(index, event.target.value)}
+                  className="w-20 bg-transparent text-sm text-stone-700 outline-none"
                   placeholder="M"
                 />
-              </label>
-
-              <label className="space-y-2 text-sm text-stone-600">
-                <span className="md:hidden">{t("productVariantColor")}</span>
-                <input
-                  value={variant.color}
-                  onChange={(event) => updateVariant(index, "color", event.target.value)}
-                  className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
-                />
-              </label>
-
-              <label className="space-y-2 text-sm text-stone-600">
-                <span className="md:hidden">{t("productVariantStock")}</span>
-                <input
-                  min="0"
-                  type="number"
-                  value={variant.stock}
-                  onChange={(event) => updateVariant(index, "stock", event.target.value)}
-                  className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
-                />
-              </label>
-
-              <div className="flex items-end justify-end">
                 <button
                   type="button"
-                  onClick={() => removeVariantRow(index)}
-                  className="rounded-full border border-red-200 px-4 py-3 text-sm text-red-500"
+                  onClick={() => removeSizeEntry(index)}
+                  className="rounded-full px-2 py-1 text-xs text-red-500 transition hover:bg-red-50"
                 >
                   {t("commonDelete")}
                 </button>
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-[28px] border border-stone-200 bg-white p-4">
+          <div className="flex flex-col gap-2 border-b border-stone-100 pb-4">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-900">
+              {variantMatrixCopy.matrixTitle}
+            </h3>
+            <p className="text-sm text-stone-500">{variantMatrixCopy.matrixHint}</p>
+          </div>
+
+          {filledSizeEntries.length > 0 && filledColorBlocks.length > 0 ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-3 text-left">
+                <thead>
+                  <tr className="text-xs uppercase tracking-[0.18em] text-stone-400">
+                    <th className="min-w-[180px] px-2 py-1">{t("productVariantColor")}</th>
+                    {filledSizeEntries.map((entry) => (
+                      <th key={entry.clientKey} className="min-w-[120px] px-2 py-1 text-center">
+                        {entry.size}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filledColorBlocks.map((block) => (
+                    <tr key={block.clientKey}>
+                      <td className="align-top">
+                        <div className="rounded-[22px] border border-stone-200 bg-[#fcfaf6] px-4 py-3">
+                          <p className="font-medium text-stone-900">{block.color}</p>
+                          <p className="mt-1 text-xs text-stone-400">
+                            {block.images.length > 0
+                              ? `${block.images.length} ảnh`
+                              : t("productColorImagesEmpty")}
+                          </p>
+                        </div>
+                      </td>
+                      {filledSizeEntries.map((entry) => (
+                        <td key={`${block.clientKey}-${entry.clientKey}`} className="align-top">
+                          <input
+                            min="0"
+                            type="number"
+                            value={getVariantStockValue(entry.size, block.color)}
+                            onChange={(event) =>
+                              updateVariantStock(entry.size, block.color, event.target.value)
+                            }
+                            className="w-full rounded-[22px] border border-stone-200 bg-[#fcfaf6] px-4 py-3 text-center text-sm text-stone-700"
+                            placeholder="-"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
+          ) : (
+            <div className="mt-4 rounded-2xl bg-[#fcfaf6] px-4 py-5 text-sm text-stone-400">
+              {variantMatrixCopy.emptyMatrix}
+            </div>
+          )}
         </div>
       </section>
 
