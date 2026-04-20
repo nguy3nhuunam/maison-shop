@@ -315,6 +315,7 @@ export default function StorefrontClient({
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [orderSuccessOpen, setOrderSuccessOpen] = useState(false);
   const [campaignPopupOpen, setCampaignPopupOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [voucherInput, setVoucherInput] = useState("");
   const [voucher, setVoucher] = useState(null);
   const [voucherMessage, setVoucherMessage] = useState("");
@@ -481,16 +482,27 @@ export default function StorefrontClient({
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const pricing = getOrderPricing(cart, voucher?.discountPercent || 0);
   const total = pricing.total;
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const hasSearchQuery = normalizedSearchQuery.length > 0;
   const activeTag = useMemo(
     () => tags.find((tag) => tag.slug === activeTagSlug) || null,
     [activeTagSlug, tags],
   );
-  const filteredProducts = useMemo(
+  const tagFilteredProducts = useMemo(
     () =>
       activeTagSlug === "all"
         ? catalog
         : catalog.filter((product) => Array.isArray(product.tags) && product.tags.includes(activeTagSlug)),
     [activeTagSlug, catalog],
+  );
+  const filteredProducts = useMemo(
+    () =>
+      hasSearchQuery
+        ? tagFilteredProducts.filter((product) =>
+            String(product.name || "").toLowerCase().includes(normalizedSearchQuery),
+          )
+        : tagFilteredProducts,
+    [hasSearchQuery, normalizedSearchQuery, tagFilteredProducts],
   );
   const homepageSections = useMemo(
     () =>
@@ -556,6 +568,26 @@ export default function StorefrontClient({
       })),
     [language, settings?.supportPages],
   );
+  const searchCopy =
+    language === "zh"
+      ? {
+          placeholder: "搜尋商品名稱",
+          clear: "清除",
+          summary: hasSearchQuery
+            ? `找到 ${filteredProducts.length} / ${tagFilteredProducts.length} 件商品`
+            : `${tagFilteredProducts.length} 件商品`,
+          empty: `找不到符合「${searchQuery.trim()}」的商品。`,
+          heading: "快速搜尋",
+        }
+      : {
+          placeholder: "Tìm theo tên sản phẩm",
+          clear: "Xóa",
+          summary: hasSearchQuery
+            ? `Tìm thấy ${filteredProducts.length} / ${tagFilteredProducts.length} sản phẩm`
+            : `${tagFilteredProducts.length} sản phẩm`,
+          empty: `Không tìm thấy sản phẩm nào khớp với “${searchQuery.trim()}”.`,
+          heading: "Tìm nhanh sản phẩm",
+        };
 
   useEffect(() => {
     if (!activePopupCampaign) {
@@ -1077,17 +1109,48 @@ export default function StorefrontClient({
           </div>
         ) : null}
 
+        <section className="mt-6 rounded-[28px] border border-stone-200/80 bg-white/80 px-5 py-4 shadow-[0_10px_26px_rgba(43,34,24,0.04)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-[#b38a45]">
+                {searchCopy.heading}
+              </p>
+              <p className="mt-2 text-sm text-stone-500">{searchCopy.summary}</p>
+            </div>
+
+            <div className="relative w-full max-w-xl">
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={searchCopy.placeholder}
+                className="w-full rounded-full border border-stone-200 bg-[#fffdf9] px-5 py-3 pr-20 text-sm text-stone-700 outline-none transition focus:border-[#b38a45]"
+              />
+              {hasSearchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-600 transition hover:border-stone-900 hover:text-stone-900"
+                >
+                  {searchCopy.clear}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
         <ProductList
           products={filteredProducts}
           onProductSelect={openProductDetails}
           emptyMessage={
-            activeTag
-              ? t("emptyTagState", { tag: activeTag.name })
-              : t.emptyState
+            hasSearchQuery
+              ? searchCopy.empty
+              : activeTag
+                ? t("emptyTagState", { tag: activeTag.name })
+                : t.emptyState
           }
         />
 
-        {isHomepageView && homepageSections.length > 0 ? (
+        {isHomepageView && !hasSearchQuery && homepageSections.length > 0 ? (
           <div className="mt-12 space-y-12">
             {homepageSections.map((section) => (
               <section key={section.key}>
@@ -1129,7 +1192,7 @@ export default function StorefrontClient({
           </div>
         ) : null}
 
-        {recentlyViewedProducts.length > 0 ? (
+        {recentlyViewedProducts.length > 0 && !hasSearchQuery ? (
           <section className="mt-12">
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-2xl font-bold text-stone-900">{t.recentlyViewed}</h3>

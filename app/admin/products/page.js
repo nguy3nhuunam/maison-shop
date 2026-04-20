@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminShell from "@/components/admin-shell";
 import { adminFetch } from "@/lib/admin-client";
 import { useTranslation } from "@/lib/use-translation";
@@ -15,6 +15,7 @@ function getVariantSummary(product) {
 export default function AdminProductsPage() {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,6 +33,36 @@ export default function AdminProductsPage() {
 
     loadProducts();
   }, [t]);
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const filteredProducts = useMemo(
+    () =>
+      normalizedSearchQuery
+        ? products.filter((product) =>
+            String(product.name || "").toLowerCase().includes(normalizedSearchQuery),
+          )
+        : products,
+    [normalizedSearchQuery, products],
+  );
+  const searchCopy =
+    t.language === "zh"
+      ? {
+          placeholder: "依商品名稱搜尋",
+          summary:
+            normalizedSearchQuery
+              ? `找到 ${filteredProducts.length} / ${products.length} 個商品`
+              : `總共 ${products.length} 個商品`,
+          empty: "沒有商品符合搜尋關鍵字。",
+          clear: "清除",
+        }
+      : {
+          placeholder: "Tìm theo tên sản phẩm",
+          summary: normalizedSearchQuery
+            ? `Tìm thấy ${filteredProducts.length} / ${products.length} sản phẩm`
+            : `Tổng cộng ${products.length} sản phẩm`,
+          empty: "Không có sản phẩm nào khớp với từ khóa tìm kiếm.",
+          clear: "Xóa",
+        };
 
   async function handleDelete(id) {
     if (!window.confirm(t("productDeleteConfirm"))) {
@@ -64,6 +95,27 @@ export default function AdminProductsPage() {
           </Link>
         </div>
 
+        <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full max-w-xl">
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={searchCopy.placeholder}
+              className="w-full rounded-full border border-stone-200 bg-white px-5 py-3 pr-20 text-sm text-stone-700 outline-none transition focus:border-[#b38a45]"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-600 transition hover:border-stone-900 hover:text-stone-900"
+              >
+                {searchCopy.clear}
+              </button>
+            ) : null}
+          </div>
+          <p className="text-sm text-stone-500">{searchCopy.summary}</p>
+        </div>
+
         {loading ? <p className="mt-6 text-sm text-stone-500">{t("commonLoading")}</p> : null}
         {error ? <p className="mt-6 text-sm text-red-500">{error}</p> : null}
 
@@ -82,7 +134,7 @@ export default function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200">
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <tr key={product.id}>
                     <td className="py-4 align-top">
                       <div className="flex items-center gap-4">
@@ -167,6 +219,10 @@ export default function AdminProductsPage() {
 
             {products.length === 0 ? (
               <p className="pt-6 text-sm text-stone-500">{t("productsEmpty")}</p>
+            ) : null}
+
+            {products.length > 0 && filteredProducts.length === 0 ? (
+              <p className="pt-6 text-sm text-stone-500">{searchCopy.empty}</p>
             ) : null}
           </div>
         ) : null}
