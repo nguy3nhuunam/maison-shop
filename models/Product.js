@@ -6,6 +6,7 @@ const VariantSchema = new mongoose.Schema(
     size: { type: String, required: true, trim: true },
     color: { type: String, required: true, trim: true },
     stock: { type: Number, required: true, min: 0, default: 0 },
+    price: { type: Number, min: 0, default: null },
     images: { type: [String], default: [] },
   },
   {
@@ -38,6 +39,7 @@ const ReviewSchema = new mongoose.Schema(
 const ProductSchema = new mongoose.Schema(
   {
     id: { type: Number, required: true, unique: true, index: true },
+    externalSourceId: { type: String, trim: true, default: "" },
     name: { type: String, required: true, trim: true },
     shortDescription: { type: String, required: true, trim: true, maxlength: 80 },
     description: { type: String, required: true, trim: true },

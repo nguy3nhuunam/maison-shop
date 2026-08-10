@@ -40,6 +40,7 @@ function createEmptyColorBlock() {
   return {
     clientKey: `color-${nextColorBlockKey++}`,
     color: "",
+    price: "",
     images: [],
   };
 }
@@ -51,6 +52,7 @@ function buildColorBlocks(product) {
 
   const blocks = [];
   const seen = new Set();
+  const defaultPrice = Number(product?.defaultPrice ?? product?.basePrice ?? 0);
 
   for (const variant of product.variants) {
     const color = String(variant.color || "").trim();
@@ -61,9 +63,14 @@ function buildColorBlocks(product) {
     }
 
     seen.add(colorKey);
+    const variantPrice = Number(variant.price);
     blocks.push({
       clientKey: `color-${nextColorBlockKey++}`,
       color,
+      price:
+        Number.isFinite(variantPrice) && variantPrice > 0 && variantPrice !== defaultPrice
+          ? String(variantPrice)
+          : "",
       images: normalizeImages(variant.images?.length ? variant.images : product.images),
     });
   }
@@ -492,6 +499,10 @@ export default function ProductForm({ product }) {
       const cleanedColorBlocks = form.colorBlocks
         .map((block) => ({
           color: String(block.color || "").trim(),
+          price:
+            block.price === "" || block.price === null || block.price === undefined
+              ? null
+              : Number(block.price),
           images: normalizeImages(block.images),
         }))
         .filter((block) => block.color || block.images.length > 0);
@@ -508,6 +519,9 @@ export default function ProductForm({ product }) {
         }
         if (seenColorKeys.has(colorKey)) {
           throw new Error(t("productColorDuplicate"));
+        }
+        if (block.price !== null && (!Number.isFinite(block.price) || block.price <= 0)) {
+          throw new Error("Giá riêng của biến thể phải lớn hơn 0.");
         }
         seenColorKeys.add(colorKey);
       }
@@ -550,8 +564,12 @@ export default function ProductForm({ product }) {
       const colorImagesByKey = new Map(
         cleanedColorBlocks.map((block) => [normalizeColorKey(block.color), block.images]),
       );
+      const colorPricesByKey = new Map(
+        cleanedColorBlocks.map((block) => [normalizeColorKey(block.color), block.price]),
+      );
       const variantsWithImages = cleanedVariants.map((variant) => ({
         ...variant,
+        price: colorPricesByKey.get(normalizeColorKey(variant.color)) ?? null,
         images: colorImagesByKey.get(normalizeColorKey(variant.color)) || [],
       }));
 
@@ -812,7 +830,7 @@ export default function ProductForm({ product }) {
 
                 return (
                   <div key={block.clientKey} className="rounded-3xl border border-stone-200 bg-[#fcfaf6] p-4">
-                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_200px_auto] md:items-end">
                       <label className="space-y-2 text-sm text-stone-600">
                         <span>{t("productVariantColor")}</span>
                         <input
@@ -820,6 +838,18 @@ export default function ProductForm({ product }) {
                           onChange={(event) => updateColorBlock(index, "color", event.target.value)}
                           className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
                           placeholder={t("productColorNamePlaceholder")}
+                        />
+                      </label>
+
+                      <label className="space-y-2 text-sm text-stone-600">
+                        <span>Giá riêng (tùy chọn)</span>
+                        <input
+                          min="0"
+                          type="number"
+                          value={block.price || ""}
+                          onChange={(event) => updateColorBlock(index, "price", event.target.value)}
+                          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3"
+                          placeholder={form.basePrice || "0"}
                         />
                       </label>
 

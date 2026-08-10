@@ -91,6 +91,15 @@ function resolveSelectedImages(product, color, selectedVariant) {
   return productImages;
 }
 
+function resolveVariantPrice(product, variant) {
+  const variantPrice = Number(variant?.price);
+  if (Number.isFinite(variantPrice) && variantPrice > 0) {
+    return variantPrice;
+  }
+
+  return Number(product?.defaultPrice ?? product?.basePrice ?? product?.price ?? 0);
+}
+
 function readFilesAsDataUrls(fileList) {
   return Promise.all(
     Array.from(fileList || []).map(
@@ -182,9 +191,13 @@ export default function ProductDetailSheet({
     [product, selectedColor, selectedVariant],
   );
   const activeImage = selectedImages[selectedImageIndex] || selectedImages[0] || product?.image || "";
+  const selectedUnitPrice = useMemo(
+    () => (product ? resolveVariantPrice(product, selectedVariant) : 0),
+    [product, selectedVariant],
+  );
   const comboTiers = useMemo(
-    () => (product ? getComboTiers(product.basePrice, product.discountPercent) : []),
-    [product],
+    () => (product ? getComboTiers(selectedUnitPrice, product.discountPercent) : []),
+    [product, selectedUnitPrice],
   );
   const relatedProducts = useMemo(
     () =>
@@ -388,7 +401,7 @@ export default function ProductDetailSheet({
       size: selectedVariant.size,
       color: selectedVariant.color,
       quantity,
-      price: product.basePrice,
+      price: selectedUnitPrice,
       discountPercent: product.discountPercent,
       isFreeShip: product.isFreeShip,
       stock: selectedVariant.stock,
@@ -396,8 +409,8 @@ export default function ProductDetailSheet({
   }
 
   const messengerHref = buildMessengerHref(product, selectedVariant);
-  const discountedPrice = getDiscountedUnitPrice(product.basePrice, product.discountPercent);
-  const unitSavings = getProductSavings(product.basePrice, product.discountPercent);
+  const discountedPrice = getDiscountedUnitPrice(selectedUnitPrice, product.discountPercent);
+  const unitSavings = getProductSavings(selectedUnitPrice, product.discountPercent);
   const reviewCountLabel =
     t.language === "zh"
       ? `${product.reviews?.length || 0} 則評價`
@@ -492,7 +505,7 @@ export default function ProductDetailSheet({
                       <p className="text-sm text-stone-500">{t("fromLabel")}</p>
                       {product.discountPercent > 0 ? (
                         <p className="mt-1 text-sm text-stone-400 line-through">
-                          {formatCurrency(product.basePrice, currency, rate)}
+                          {formatCurrency(selectedUnitPrice, currency, rate)}
                         </p>
                       ) : null}
                       <p className="mt-1 text-3xl font-bold text-stone-900">
